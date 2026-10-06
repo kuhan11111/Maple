@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>羅密歐與茱麗葉 · 研究室走廊輔助</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>羅密歐與茱麗葉 · 研究室走廊</h1>
+    <p>10 層 × 4 平台,即時推論「誰該試哪個平台」</p>
+  </div>
+  <div class="modes" role="group" aria-label="操作模式">
+    <button id="modeAuto" class="seg" data-mode="auto">自動(螢幕偵測)</button>
+    <button id="modeManual" class="seg" data-mode="manual">手動</button>
+  </div>
+  <div class="top-actions">
+    <button id="btnUndo" class="btn" title="復原上一筆紀錄">↶ 復原</button>
+    <button id="btnDemo" class="btn" title="用模擬資料示範整個流程">▶ 示範</button>
+    <button id="btnReset" class="btn danger">新的一輪</button>
+  </div>
+</header>
+
+<main class="layout">
+  <div class="col-left">
+    <section class="panel" id="roomPanel">
+      <h2>隊伍連線 <small class="muted">四個人各開一份,結果即時同步</small></h2>
+      <div class="form">
+        <label><span>我是<small>每人只偵測自己的角色</small></span>
+          <select id="seatSel"><option value="0">玩家 1</option><option value="1">玩家 2</option><option value="2">玩家 3</option><option value="3">玩家 4</option><option value="all">全部(單機,一台管四個人)</option></select></label>
+        <label><span>房間代碼<small>四人填同一組,別人猜不到的字串</small></span><input id="roomCode" type="text" maxlength="24" placeholder="例如 mushroom42" autocomplete="off"></label>
+        <label><span>連線方式</span>
+          <select id="roomVia"><option value="peer">網路(WebRTC,不同電腦)</option><option value="tab">同一個瀏覽器的分頁(測試 / 多開)</option></select></label>
+      </div>
+      <div class="row wrap"><button id="btnRoom" class="btn primary">連線</button><button id="btnRoomNew" class="btn ghost" title="產生一組隨機房間代碼">產生代碼</button><span id="roomInfo" class="muted"></span></div>
+      <div id="seats" class="seats"></div>
+      <details class="sub">
+        <summary>不連線也能同步:用「分享碼」</summary>
+        <div class="row wrap"><button id="btnShareCopy" class="btn sm">複製我的分享碼</button><span class="muted">貼到遊戲聊天 / Discord 給隊友</span></div>
+        <textarea id="shareBox" rows="3" placeholder="貼上隊友的分享碼(可一次貼多組)" spellcheck="false"></textarea>
+        <div class="row wrap"><button id="btnShareMerge" class="btn sm">合併貼上的分享碼</button></div>
+      </details>
+    </section>
+
+    <details class="panel" id="help">
+      <summary>使用說明與規則假設</summary>
+      <div class="help">
+        <p><b>測試方式:</b>站在平台中央附近按 <kbd>↑</kbd>。<b>失敗</b>會被瞬間傳送到最底層;成功則沒有任何事發生。自己跳躍摔下去<b>不是</b>平台錯,不會被記成失敗。</p>
+        <p><b>手動模式:</b>每張卡片上按「✔ 成功」或「✘ 被傳回底層」登記剛剛試的平台(預設就是建議的那個,想改試別的平台先點卡片上的 ①②③④)。也可以直接點「平台總覽」裡的小圓點標記。</p>
+        <p><b>自動模式:</b>擷取遊戲視窗 → 校準格線 → 框選每位玩家的名牌 → 開始偵測。偵測「平台 → 底層之間沒有空中畫面」判為傳送(失敗);成功沒有畫面訊號,所以用「站著沒被傳走」或「往上一層」推論,可在設定關閉。</p>
+        <p><b>規則:</b>預設「每人答案不同(隊友互斥)」——某位隊友成功的平台,對你就一定是錯的,系統會用這個一直縮小範圍。如果你們實測發現全隊共用同一組答案,到設定切換「全隊共用同一答案」。</p>
+        <p><b>連線:</b>這關四個人各在獨立房間,一台電腦只看得到自己,所以要<b>四個人各開一份</b>、選自己的座位、輸入同一組房間代碼。結果、位置和「新的一輪」會即時同步;隊友成功的平台對你就一定是錯的,系統會自動縮小範圍。</p>
+        <p><b>前提:</b>10 層平台要同時出現在同一個畫面內(畫面不能隨角色捲動);底層指起點地面,第 1 層是它上面的第一排平台。</p>
+      </div>
+    </details>
+
+    <section id="autoPanel" class="panel">
+      <h2>螢幕偵測</h2>
+      <div class="stage">
+        <canvas id="view" width="960" height="540"></canvas>
+        <div id="pickBanner" class="banner" hidden></div>
+        <div id="viewEmpty" class="empty">尚未擷取畫面<br><small>按下「擷取遊戲畫面」並選擇遊戲視窗</small></div>
+      </div>
+      <video id="video" muted playsinline class="sr-video"></video>
+      <div class="row wrap">
+        <button id="btnCapture" class="btn primary">① 擷取遊戲畫面</button>
+        <button id="btnStop" class="btn" hidden>停止擷取</button>
+        <label class="btn file" title="用錄好的影片測試偵測">改用影片檔<input id="fileVideo" type="file" accept="video/*" hidden></label>
+        <span id="capInfo" class="muted"></span>
+      </div>
+      <ol class="steps">
+        <li id="stepGrid"><b>② 校準平台格線</b>
+          <span class="muted">凍結畫面後依序點:第 1 層最左平台 → 第 10 層最右平台(→ 選填:起點地面)</span>
+          <div class="row wrap"><button id="btnGrid" class="btn">開始校準</button><button id="btnGridClear" class="btn ghost">清除</button></div>
+        </li>
+        <li id="stepTpl"><b>③ 框選自己的名牌</b>
+          <span class="muted">每人的房間是獨立的,只看得到自己:在下方「隊伍」按自己那列的「框選名牌」,在凍結畫面上拖曳框住自己腳下的名字</span>
+        </li>
+        <li id="stepRun"><b>④ 開始偵測</b>
+          <div class="row wrap"><button id="btnDetect" class="btn primary">▶ 開始偵測</button><span id="detInfo" class="muted"></span></div>
+        </li>
+      </ol>
+    </section>
+
+    <section class="panel">
+      <h2>隊伍</h2>
+      <div id="team" class="team"></div>
+    </section>
+
+    <details class="panel" id="settings">
+      <summary>設定</summary>
+      <div class="form" id="settingsForm"></div>
+    </details>
+  </div>
+
+  <div class="col-right">
+    <section class="panel">
+      <h2>下一步建議</h2>
+      <div id="cards" class="cards"></div>
+      <p id="warn" class="warn" hidden></p>
+    </section>
+
+    <section class="panel">
+      <h2>平台總覽 <small class="muted">由下往上 1→10,每格 4 點 = 4 位玩家</small></h2>
+      <div id="board" class="board"></div>
+      <div class="legend">
+        <span><i class="dot ok"></i>確定正確</span><span><i class="dot cand"></i>可能</span><span><i class="dot x"></i>排除</span><span><i class="dot star"></i>建議去試</span><span><i class="dot here"></i>目前站的位置</span>
+        <span class="muted">點小圓點可手動標記 ✔ / ✘</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>事件紀錄</h2>
+      <ul id="log" class="log"></ul>
+    </section>
+
+    <details class="panel" id="statsPanel">
+      <summary>數據統計 <small class="muted" id="statsBrief"></small></summary>
+      <div id="stats"></div>
+    </details>
+  </div>
+</main>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

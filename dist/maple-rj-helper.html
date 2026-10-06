@@ -1,0 +1,2899 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>羅密歐與茱麗葉 · 研究室走廊輔助</title>
+<style>
+:root {
+  --bg: #12151c;
+  --panel: #1a1f2a;
+  --panel-2: #222836;
+  --line: #2e3647;
+  --text: #e8ecf4;
+  --muted: #8d97ab;
+  --accent: #ffb347;
+  --good: #51cf66;
+  --bad: #ff6b6b;
+  --warn: #fcc419;
+  --p0: #ff6b6b;
+  --p1: #4dabf7;
+  --p2: #51cf66;
+  --p3: #fcc419;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif; }
+h1, h2 { margin: 0; }
+h1 { font-size: 20px; }
+h2 { font-size: 15px; margin-bottom: 10px; color: var(--accent); letter-spacing: .02em; }
+small, .muted { color: var(--muted); font-weight: 400; }
+.sr-video { position: fixed; width: 2px; height: 2px; opacity: 0; pointer-events: none; left: 0; top: 0; }
+
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 5; }
+.brand p { margin: 0; color: var(--muted); font-size: 13px; }
+.modes { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg { background: transparent; color: var(--muted); border: 0; padding: 8px 14px; cursor: pointer; font: inherit; }
+.seg[aria-pressed="true"] { background: var(--accent); color: #1b1305; font-weight: 700; }
+.top-actions { margin-left: auto; display: flex; gap: 8px; }
+
+.btn { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; font: inherit; cursor: pointer; }
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn.primary { background: var(--accent); color: #1b1305; border-color: var(--accent); font-weight: 700; }
+.btn.danger:hover { border-color: var(--bad); color: var(--bad); }
+.btn.ghost { background: transparent; }
+.btn.file { display: inline-block; }
+.btn.sm { padding: 3px 9px; font-size: 13px; }
+
+.layout { display: grid; grid-template-columns: minmax(340px, 5fr) minmax(420px, 6fr); gap: 16px; padding: 16px; max-width: 1500px; margin: 0 auto; align-items: start; }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+.col-left, .col-right { display: grid; gap: 16px; min-width: 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; min-width: 0; }
+details.panel > summary { cursor: pointer; font-weight: 700; color: var(--accent); }
+details.panel[open] > summary { margin-bottom: 10px; }
+.row { display: flex; align-items: center; gap: 8px; }
+.row.wrap { flex-wrap: wrap; margin-top: 8px; }
+.warn { color: var(--warn); margin: 10px 0 0; font-size: 13px; }
+
+body[data-mode="manual"] #autoPanel { display: none; }
+body[data-mode="manual"] .auto-only { display: none; }
+
+/* screen preview */
+.stage { position: relative; background: #000; border-radius: 8px; overflow: hidden; aspect-ratio: 16 / 9; }
+#view { width: 100%; height: 100%; display: block; object-fit: contain; touch-action: none; }
+#view.picking { cursor: crosshair; }
+.empty { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; color: var(--muted); }
+.banner { position: absolute; left: 8px; right: 8px; top: 8px; background: rgba(255, 179, 71, .95); color: #1b1305; padding: 6px 10px; border-radius: 8px; font-weight: 700; display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.banner button { border: 0; background: #1b1305; color: var(--accent); border-radius: 6px; padding: 2px 8px; cursor: pointer; font: inherit; }
+.steps { padding-left: 18px; margin: 12px 0 0; display: grid; gap: 10px; }
+.steps li { padding-left: 4px; }
+.steps li.done::marker { content: "✓ "; color: var(--good); }
+.steps .muted { display: block; font-size: 13px; }
+
+/* team */
+.team { display: grid; gap: 8px; }
+.member { display: grid; grid-template-columns: auto 1fr auto auto; gap: 8px; align-items: center; background: var(--panel-2); border-radius: 8px; padding: 6px 8px; border-left: 4px solid var(--pc); }
+.member input[type="text"] { background: transparent; border: 1px solid transparent; color: var(--text); font: inherit; padding: 3px 6px; border-radius: 6px; width: 100%; min-width: 0; }
+.member input[type="text"]:hover, .member input[type="text"]:focus { border-color: var(--line); outline: none; }
+.member canvas { height: 22px; max-width: 90px; image-rendering: pixelated; background: #000; border-radius: 3px; }
+.member .st { font-size: 12px; color: var(--muted); grid-column: 2 / -1; }
+.member .st.ok { color: var(--good); }
+.member .st.lost { color: var(--bad); }
+.swatch { width: 12px; height: 12px; border-radius: 50%; background: var(--pc); }
+
+/* settings */
+.form { display: grid; gap: 10px; }
+.form label { display: grid; grid-template-columns: 1fr minmax(110px, 150px); gap: 10px; align-items: center; font-size: 14px; }
+.form label small { display: block; }
+.form input[type="number"], .form select { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font: inherit; width: 100%; }
+.form input[type="range"] { width: 100%; }
+.form .chk { grid-template-columns: auto 1fr; }
+.form h3 { margin: 8px 0 0; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 8px; }
+
+/* advice cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.card { background: var(--panel-2); border-radius: 10px; padding: 10px 12px; border-top: 4px solid var(--pc); display: grid; gap: 6px; align-content: start; }
+.card header { display: flex; align-items: center; gap: 8px; }
+.card .name { font-weight: 700; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lv { background: var(--bg); border-radius: 999px; padding: 1px 9px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.card .big { font-size: 18px; font-weight: 700; line-height: 1.3; }
+.card .big.go { color: var(--accent); }
+.card .big.wait { color: var(--muted); }
+.card .big.done { color: var(--good); }
+.card .sub { font-size: 13px; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.chip { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; font-size: 13px; color: var(--text); font-variant-numeric: tabular-nums; }
+button.chip { cursor: pointer; font: inherit; font-size: 13px; }
+.chip.on { border-color: var(--accent); background: rgba(255, 179, 71, .15); color: var(--accent); font-weight: 700; }
+.chip.route { color: var(--muted); }
+.hint { font-size: 12px; color: #7bd3ea; }
+.acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.acts .btn { padding: 5px 10px; }
+.btn.pass { border-color: var(--good); color: var(--good); }
+.btn.fail { border-color: var(--bad); color: var(--bad); }
+.btn.pass:hover:not(:disabled) { background: rgba(81, 207, 102, .15); }
+.btn.fail:hover:not(:disabled) { background: rgba(255, 107, 107, .15); }
+body[data-mode="auto"] .acts.manual-main .btn { padding: 2px 8px; font-size: 12px; }
+
+/* board */
+.board { display: grid; gap: 4px; }
+.brow { display: grid; grid-template-columns: 38px repeat(4, 1fr); gap: 4px; align-items: stretch; }
+.brow .lab { display: grid; place-content: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.brow .lab.conflict { color: var(--warn); }
+.bcell { background: var(--panel-2); border-radius: 8px; padding: 5px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; justify-items: center; min-height: 40px; border: 1px solid transparent; }
+.bcell.head { background: none; min-height: 0; padding: 0; font-size: 12px; color: var(--muted); display: block; text-align: center; }
+.bcell.known { border-color: rgba(81, 207, 102, .5); }
+.dot { --pc: #888; width: 15px; height: 15px; border-radius: 50%; display: inline-block; position: relative; border: 2px solid var(--pc); cursor: pointer; background: transparent; padding: 0; }
+.legend .dot { cursor: default; --pc: #bbb; width: 11px; height: 11px; vertical-align: -1px; margin-right: 4px; }
+.dot.cand { opacity: .75; }
+.dot.ok { background: var(--pc); }
+.dot.ok::after { content: "✓"; position: absolute; inset: -3px 0 0; text-align: center; font-size: 11px; line-height: 15px; color: #111; font-weight: 800; }
+.dot.x { opacity: .22; border-style: dashed; }
+.dot.x::after { content: "×"; position: absolute; inset: -4px 0 0; text-align: center; font-size: 13px; line-height: 15px; color: var(--text); }
+.dot.star { box-shadow: 0 0 0 3px rgba(255, 179, 71, .9); opacity: 1; }
+.dot.here::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--text); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; margin-top: 10px; color: var(--muted); align-items: center; }
+.legend .dot.ok::after, .legend .dot.x::after { display: none; }
+.legend .dot.ok { background: #bbb; }
+.legend .dot.x { opacity: .4; }
+.legend .dot.star { box-shadow: 0 0 0 2px rgba(255, 179, 71, .9); }
+.legend .dot.here::before { inset: -4px; }
+
+/* log */
+.log { list-style: none; margin: 0; padding: 0; max-height: 240px; overflow: auto; display: grid; gap: 3px; font-size: 13px; }
+.log li { display: flex; gap: 8px; align-items: center; padding: 3px 6px; background: var(--panel-2); border-radius: 6px; border-left: 3px solid var(--pc); }
+.log .t { color: var(--muted); font-variant-numeric: tabular-nums; }
+.log .ok { color: var(--good); }
+.log .bad { color: var(--bad); }
+.log button { margin-left: auto; background: none; border: 0; color: var(--muted); cursor: pointer; }
+.log button:hover { color: var(--bad); }
+.log .empty-note { color: var(--muted); background: none; border: 0; }
+
+/* stats */
+.stat-tiles { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.tile { background: var(--panel-2); border-radius: 8px; padding: 6px 12px; }
+.tile b { font-size: 18px; display: block; }
+.verdict { padding: 8px 10px; border-radius: 8px; margin-bottom: 10px; background: var(--panel-2); border-left: 4px solid var(--muted); }
+.verdict.random { border-color: var(--good); }
+.verdict.pattern { border-color: var(--accent); }
+table.stat { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 10px; font-variant-numeric: tabular-nums; }
+table.stat th, table.stat td { padding: 2px 6px; text-align: center; border-bottom: 1px solid var(--line); }
+table.stat td.bar { position: relative; }
+table.stat td.bar i { position: absolute; left: 0; bottom: 0; top: 0; background: rgba(77, 171, 247, .28); }
+table.stat td.bar span { position: relative; }
+.sig { color: var(--accent); font-weight: 700; }
+
+/* toasts */
+.toasts { position: fixed; right: 12px; bottom: 12px; display: grid; gap: 8px; max-width: min(420px, calc(100vw - 24px)); z-index: 20; }
+.toast { background: var(--panel-2); border: 1px solid var(--accent); border-radius: 10px; padding: 10px 12px; box-shadow: 0 6px 24px rgba(0, 0, 0, .5); display: grid; gap: 6px; font-size: 14px; }
+.toast.info { border-color: var(--line); }
+
+.help p { margin: 0 0 8px; font-size: 14px; }
+kbd { background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font: inherit; font-size: 12px; }
+
+.seats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.seat { display: inline-flex; align-items: center; gap: 6px; background: var(--panel-2); border-radius: 999px; padding: 2px 10px; font-size: 13px; border: 1px solid var(--line); }
+.seat i, .net { width: 8px; height: 8px; border-radius: 50%; background: #555; display: inline-block; }
+.seat.on i, .net.on { background: var(--good); box-shadow: 0 0 6px var(--good); }
+.seat.me { border-color: var(--accent); }
+#roomPanel .form { margin-bottom: 10px; }
+#roomPanel input[type="text"], #shareBox { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; font: inherit; width: 100%; }
+details.sub { margin-top: 10px; }
+details.sub > summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+#shareBox { margin: 8px 0; font-size: 12px; font-family: ui-monospace, monospace; resize: vertical; }
+.card .me-tag { color: var(--accent); font-size: 12px; font-weight: 400; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>羅密歐與茱麗葉 · 研究室走廊</h1>
+    <p>10 層 × 4 平台,即時推論「誰該試哪個平台」</p>
+  </div>
+  <div class="modes" role="group" aria-label="操作模式">
+    <button id="modeAuto" class="seg" data-mode="auto">自動(螢幕偵測)</button>
+    <button id="modeManual" class="seg" data-mode="manual">手動</button>
+  </div>
+  <div class="top-actions">
+    <button id="btnUndo" class="btn" title="復原上一筆紀錄">↶ 復原</button>
+    <button id="btnDemo" class="btn" title="用模擬資料示範整個流程">▶ 示範</button>
+    <button id="btnReset" class="btn danger">新的一輪</button>
+  </div>
+</header>
+
+<main class="layout">
+  <div class="col-left">
+    <section class="panel" id="roomPanel">
+      <h2>隊伍連線 <small class="muted">四個人各開一份,結果即時同步</small></h2>
+      <div class="form">
+        <label><span>我是<small>每人只偵測自己的角色</small></span>
+          <select id="seatSel"><option value="0">玩家 1</option><option value="1">玩家 2</option><option value="2">玩家 3</option><option value="3">玩家 4</option><option value="all">全部(單機,一台管四個人)</option></select></label>
+        <label><span>房間代碼<small>四人填同一組,別人猜不到的字串</small></span><input id="roomCode" type="text" maxlength="24" placeholder="例如 mushroom42" autocomplete="off"></label>
+        <label><span>連線方式</span>
+          <select id="roomVia"><option value="peer">網路(WebRTC,不同電腦)</option><option value="tab">同一個瀏覽器的分頁(測試 / 多開)</option></select></label>
+      </div>
+      <div class="row wrap"><button id="btnRoom" class="btn primary">連線</button><button id="btnRoomNew" class="btn ghost" title="產生一組隨機房間代碼">產生代碼</button><span id="roomInfo" class="muted"></span></div>
+      <div id="seats" class="seats"></div>
+      <details class="sub">
+        <summary>不連線也能同步:用「分享碼」</summary>
+        <div class="row wrap"><button id="btnShareCopy" class="btn sm">複製我的分享碼</button><span class="muted">貼到遊戲聊天 / Discord 給隊友</span></div>
+        <textarea id="shareBox" rows="3" placeholder="貼上隊友的分享碼(可一次貼多組)" spellcheck="false"></textarea>
+        <div class="row wrap"><button id="btnShareMerge" class="btn sm">合併貼上的分享碼</button></div>
+      </details>
+    </section>
+
+    <details class="panel" id="help">
+      <summary>使用說明與規則假設</summary>
+      <div class="help">
+        <p><b>測試方式:</b>站在平台中央附近按 <kbd>↑</kbd>。<b>失敗</b>會被瞬間傳送到最底層;成功則沒有任何事發生。自己跳躍摔下去<b>不是</b>平台錯,不會被記成失敗。</p>
+        <p><b>手動模式:</b>每張卡片上按「✔ 成功」或「✘ 被傳回底層」登記剛剛試的平台(預設就是建議的那個,想改試別的平台先點卡片上的 ①②③④)。也可以直接點「平台總覽」裡的小圓點標記。</p>
+        <p><b>自動模式:</b>擷取遊戲視窗 → 校準格線 → 框選每位玩家的名牌 → 開始偵測。偵測「平台 → 底層之間沒有空中畫面」判為傳送(失敗);成功沒有畫面訊號,所以用「站著沒被傳走」或「往上一層」推論,可在設定關閉。</p>
+        <p><b>規則:</b>預設「每人答案不同(隊友互斥)」——某位隊友成功的平台,對你就一定是錯的,系統會用這個一直縮小範圍。如果你們實測發現全隊共用同一組答案,到設定切換「全隊共用同一答案」。</p>
+        <p><b>連線:</b>這關四個人各在獨立房間,一台電腦只看得到自己,所以要<b>四個人各開一份</b>、選自己的座位、輸入同一組房間代碼。結果、位置和「新的一輪」會即時同步;隊友成功的平台對你就一定是錯的,系統會自動縮小範圍。</p>
+        <p><b>前提:</b>10 層平台要同時出現在同一個畫面內(畫面不能隨角色捲動);底層指起點地面,第 1 層是它上面的第一排平台。</p>
+      </div>
+    </details>
+
+    <section id="autoPanel" class="panel">
+      <h2>螢幕偵測</h2>
+      <div class="stage">
+        <canvas id="view" width="960" height="540"></canvas>
+        <div id="pickBanner" class="banner" hidden></div>
+        <div id="viewEmpty" class="empty">尚未擷取畫面<br><small>按下「擷取遊戲畫面」並選擇遊戲視窗</small></div>
+      </div>
+      <video id="video" muted playsinline class="sr-video"></video>
+      <div class="row wrap">
+        <button id="btnCapture" class="btn primary">① 擷取遊戲畫面</button>
+        <button id="btnStop" class="btn" hidden>停止擷取</button>
+        <label class="btn file" title="用錄好的影片測試偵測">改用影片檔<input id="fileVideo" type="file" accept="video/*" hidden></label>
+        <span id="capInfo" class="muted"></span>
+      </div>
+      <ol class="steps">
+        <li id="stepGrid"><b>② 校準平台格線</b>
+          <span class="muted">凍結畫面後依序點:第 1 層最左平台 → 第 10 層最右平台(→ 選填:起點地面)</span>
+          <div class="row wrap"><button id="btnGrid" class="btn">開始校準</button><button id="btnGridClear" class="btn ghost">清除</button></div>
+        </li>
+        <li id="stepTpl"><b>③ 框選自己的名牌</b>
+          <span class="muted">每人的房間是獨立的,只看得到自己:在下方「隊伍」按自己那列的「框選名牌」,在凍結畫面上拖曳框住自己腳下的名字</span>
+        </li>
+        <li id="stepRun"><b>④ 開始偵測</b>
+          <div class="row wrap"><button id="btnDetect" class="btn primary">▶ 開始偵測</button><span id="detInfo" class="muted"></span></div>
+        </li>
+      </ol>
+    </section>
+
+    <section class="panel">
+      <h2>隊伍</h2>
+      <div id="team" class="team"></div>
+    </section>
+
+    <details class="panel" id="settings">
+      <summary>設定</summary>
+      <div class="form" id="settingsForm"></div>
+    </details>
+  </div>
+
+  <div class="col-right">
+    <section class="panel">
+      <h2>下一步建議</h2>
+      <div id="cards" class="cards"></div>
+      <p id="warn" class="warn" hidden></p>
+    </section>
+
+    <section class="panel">
+      <h2>平台總覽 <small class="muted">由下往上 1→10,每格 4 點 = 4 位玩家</small></h2>
+      <div id="board" class="board"></div>
+      <div class="legend">
+        <span><i class="dot ok"></i>確定正確</span><span><i class="dot cand"></i>可能</span><span><i class="dot x"></i>排除</span><span><i class="dot star"></i>建議去試</span><span><i class="dot here"></i>目前站的位置</span>
+        <span class="muted">點小圓點可手動標記 ✔ / ✘</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>事件紀錄</h2>
+      <ul id="log" class="log"></ul>
+    </section>
+
+    <details class="panel" id="statsPanel">
+      <summary>數據統計 <small class="muted" id="statsBrief"></small></summary>
+      <div id="stats"></div>
+    </details>
+  </div>
+</main>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<script type="module">
+// Inference + advice for the 10-level / 4-platform climb.
+//
+// A "fact" is { level, player, col, ok } : player stood on (level, col) and either
+// stayed (ok) or was sent back to the bottom (!ok). Levels are 1..LEVELS, cols 0..COLS-1
+// (left to right).
+//
+// Two rule sets are supported because the in-game wording is ambiguous:
+//   latin  - every player has their own correct platform per level, and no two players
+//            share one (a platform that is right for a teammate is wrong for you).
+//   shared - one correct platform per level for the whole team.
+
+const LEVELS = 10;
+const COLS = 4;
+
+const assignmentCache = new Map();
+
+/** Every possible player -> column assignment for one level under the given rules. */
+function assignments(nPlayers, mode) {
+  const key = `${mode}:${nPlayers}`;
+  let all = assignmentCache.get(key);
+  if (all) return all;
+  all = [];
+  if (mode === 'shared') {
+    for (let c = 0; c < COLS; c++) all.push(new Array(nPlayers).fill(c));
+  } else {
+    const cur = [];
+    const used = new Array(COLS).fill(false);
+    const rec = () => {
+      if (cur.length === nPlayers) {
+        all.push(cur.slice());
+        return;
+      }
+      for (let c = 0; c < COLS; c++) {
+        if (used[c]) continue;
+        used[c] = true;
+        cur.push(c);
+        rec();
+        cur.pop();
+        used[c] = false;
+      }
+    };
+    rec();
+  }
+  assignmentCache.set(key, all);
+  return all;
+}
+
+/**
+ * Candidate columns per player for one level, by enumerating every assignment that
+ * agrees with the facts. Contradictory facts (a mis-detection) fall back to plain
+ * per-player elimination and set `conflict`.
+ */
+function analyzeLevel(facts, nPlayers, mode) {
+  const sols = assignments(nPlayers, mode).filter((s) =>
+    facts.every((f) => (s[f.player] === f.col) === f.ok),
+  );
+  if (sols.length) {
+    const cands = Array.from({ length: nPlayers }, (_, p) =>
+      [...new Set(sols.map((s) => s[p]))].sort((a, b) => a - b),
+    );
+    return { cands, solutions: sols, conflict: false };
+  }
+  const cands = Array.from({ length: nPlayers }, (_, p) => {
+    const mine = facts.filter((f) => mode === 'shared' || f.player === p);
+    const ok = mine.filter((f) => f.ok).pop();
+    if (ok) return [ok.col];
+    const left = [0, 1, 2, 3].filter((c) => !mine.some((f) => !f.ok && f.col === c));
+    return left.length ? left : [0, 1, 2, 3];
+  });
+  return { cands, solutions: null, conflict: true };
+}
+
+/** analysis[L] for L = 1..LEVELS (index 0 unused). */
+function analyze(facts, nPlayers, mode) {
+  const byLevel = Array.from({ length: LEVELS + 1 }, () => []);
+  for (const f of facts) if (f.level >= 1 && f.level <= LEVELS) byLevel[f.level].push(f);
+  const out = [null];
+  for (let L = 1; L <= LEVELS; L++) out.push(analyzeLevel(byLevel[L], nPlayers, mode));
+  return out;
+}
+
+/**
+ * Work out what every player should do next.
+ *
+ *   facts       known results so far
+ *   levels      current confirmed level of each player (0 = bottom), length = team size
+ *   mode        'latin' | 'shared'
+ *   maxTesters  shared mode only: how many players may probe the same level at once
+ *   prev        previous advice per player ({level, col}) - kept when still valid so the
+ *               suggestion does not flip around between calls
+ *   pending     attempts happening right now ({player, level, col}); teammates are steered
+ *               away from those platforms
+ *
+ * Each plan: { player, level, done, route[], testLevel, cands[], ready, wait, test }
+ *   route  known steps still to climb, [{level, col}]
+ *   test   {level, col} to probe at testLevel, or null
+ */
+function advise({ facts, levels, mode = 'latin', maxTesters = COLS, prev = [], pending = [] }) {
+  const n = levels.length;
+  const analysis = analyze(facts, n, mode);
+  const pendingCol = (p, L) => pending.find((q) => q.player === p && q.level === L)?.col;
+  const prevCol = (p, L) => (prev[p] && prev[p].level === L ? prev[p].col : undefined);
+
+  const plans = levels.map((level, player) => {
+    const route = [];
+    let testLevel = null;
+    for (let L = level + 1; L <= LEVELS; L++) {
+      const c = analysis[L].cands[player];
+      if (c.length === 1) route.push({ level: L, col: c[0] });
+      else {
+        testLevel = L;
+        break;
+      }
+    }
+    return {
+      player,
+      level,
+      done: level >= LEVELS,
+      route,
+      testLevel,
+      cands: testLevel ? analysis[testLevel].cands[player] : [],
+      ready: testLevel !== null && level === testLevel - 1,
+      wait: false,
+      test: null,
+    };
+  });
+
+  const testLevels = [...new Set(plans.filter((pl) => pl.testLevel).map((pl) => pl.testLevel))];
+  for (const L of testLevels) {
+    const group = plans.filter((pl) => pl.testLevel === L);
+    const a = analysis[L];
+    if (mode === 'latin' && a.solutions) {
+      // Pick one complete, consistent assignment and hand each tester their column from
+      // it, so concurrent testers never share a platform.
+      let best = null;
+      let bestScore = -1;
+      for (const s of a.solutions) {
+        let score = 0;
+        for (const pl of group) {
+          if (pendingCol(pl.player, L) === s[pl.player]) score += 100;
+          if (prevCol(pl.player, L) === s[pl.player]) score += 1;
+        }
+        if (score > bestScore) {
+          best = s;
+          bestScore = score;
+        }
+      }
+      for (const pl of group) pl.test = { level: L, col: best[pl.player] };
+    } else {
+      assignDistinct(group, L, mode === 'shared' ? maxTesters : COLS, pendingCol, prevCol);
+    }
+  }
+  return { analysis, plans, conflicts: analysis.flatMap((a, L) => (a && a.conflict ? [L] : [])) };
+}
+
+// Give each tester a different column from their candidates. Players who are already
+// standing at the frontier choose first; the rest get a provisional pick.
+function assignDistinct(group, L, maxTesters, pendingCol, prevCol) {
+  const order = group
+    .slice()
+    .sort((x, y) => Number(y.ready) - Number(x.ready) || y.level - x.level || x.player - y.player);
+  const used = new Set();
+  let testers = 0;
+  for (const pl of order) {
+    const free = pl.cands.filter((c) => !used.has(c));
+    if (testers >= maxTesters || !free.length) {
+      pl.wait = true;
+      continue;
+    }
+    const pick = [pendingCol(pl.player, L), prevCol(pl.player, L)].find((c) => c !== undefined && free.includes(c)) ?? free[0];
+    used.add(pick);
+    testers++;
+    pl.test = { level: L, col: pick };
+  }
+}
+
+// Maps a point on the captured screen to a cell of the 10-level x 4-platform board.
+//
+// The user clicks two platforms (level 1 left-most, level 10 right-most) and optionally the
+// start/ground line; everything in between is interpolated linearly. Row 0 is the ground.
+
+
+function makeGrid({ x1, y1, x2, y2, groundY }) {
+  const dy = (y1 - y2) / (LEVELS - 1); // pixels per level, positive when level 10 is higher on screen
+  const dx = (x2 - x1) / (COLS - 1);
+  const rowY = [groundY ?? y1 + dy];
+  for (let L = 1; L <= LEVELS; L++) rowY.push(y1 - (L - 1) * dy);
+  const colX = Array.from({ length: COLS }, (_, c) => x1 + c * dx);
+  return { x1, y1, x2, y2, groundY: rowY[0], dx, dy, rowY, colX };
+}
+
+function gridValid(g) {
+  return !!g && g.dy > 4 && g.dx > 4 && Number.isFinite(g.groundY);
+}
+
+/**
+ * Where is a character whose feet are at (fx, fy)?
+ *   {kind:'plat', level, col} standing on a platform
+ *   {kind:'ground'}           on the start/bottom floor
+ *   {kind:'air'}              between rows (jumping / falling)
+ * tolY / tolX are fractions of the row / column spacing.
+ */
+function classify(grid, fx, fy, { tolY = 0.3, tolX = 0.7 } = {}) {
+  const { rowY, colX, dy, dx } = grid;
+  let best = 0;
+  let bestD = Infinity;
+  for (let L = 0; L <= LEVELS; L++) {
+    const d = Math.abs(fy - rowY[L]);
+    if (d < bestD) {
+      bestD = d;
+      best = L;
+    }
+  }
+  if (fy > rowY[0] + tolY * dy) return { kind: 'ground' };
+  if (bestD > tolY * dy) return { kind: 'air' };
+  if (best === 0) return { kind: 'ground' };
+  let col = 0;
+  for (let c = 1; c < COLS; c++) if (Math.abs(fx - colX[c]) < Math.abs(fx - colX[col])) col = c;
+  if (Math.abs(fx - colX[col]) > tolX * dx) return { kind: 'air' };
+  return { kind: 'plat', level: best, col };
+}
+
+// Turns "where is each player on the board, frame by frame" into game events.
+//
+// How the game works: you stand near the middle of a platform and press Up. A wrong platform
+// teleports you straight to the bottom; a right one does nothing visible. Falling off by a
+// bad jump is not a verdict on the platform. So:
+//
+//   bad          on a platform, then on the bottom floor a frame later with nothing in the
+//                air between (a teleport, not a fall)  -> that platform is wrong
+//   ok           stood on the next level's platform and was never sent back (okStandMs), or
+//                went on up to the next level from it (okMode 'advance'/'both')
+//   unknownFall  the tag vanished and reappeared at the bottom - could have been a teleport
+//
+// Cells come from grid.classify(): {kind:'plat'|'ground'|'air', level, col}, or null when
+// the player's name tag was not found in that frame.
+
+const DEFAULT_TIMING = {
+  touchMs: 200, // standing this long on a platform = a real stop (pressing Up), not a pass-through
+  okStandMs: 1500, // stood on the next platform this long without being sent back = it is right
+  okMode: 'both', // 'both' | 'advance' (only when they go up) | 'off' (never infer success)
+  pressMs: 400, // when credited by going up, the platform must have been stood on this long
+  teleportMs: 250, // platform -> bottom within this long, no air frames = teleport
+  teleConfirmMs: 160, // ...and the player must stay at the bottom this long (ignores one-frame glitches)
+  lostGapMs: 1500, // tag lost for up to this long between platform and bottom = ask
+  gapMs: 400, // leaving a platform for less than this does not restart its stand time
+  lostMs: 2500, // tag unseen this long = player is lost
+};
+
+class Engine {
+  constructor(n, timing = {}) {
+    this.timing = { ...DEFAULT_TIMING, ...timing };
+    this.players = Array.from({ length: n }, () => this.#fresh());
+  }
+
+  #fresh() {
+    return {
+      level: 0, // highest level confirmed standing on (0 = bottom)
+      col: null,
+      cell: null,
+      attempt: null, // {level, col, tLast}: standing on the next level's platform
+      touched: {}, // level -> {col, since, t}
+      last: null, // last platform seen: {level, col, t, since}
+      airFrames: 0, // air sightings since the last platform
+      blind: false, // tag was missing since the last platform
+      tele: null, // teleport waiting for confirmation: {level, col, t}
+      lastSeen: -Infinity,
+      lost: true,
+    };
+  }
+
+  #bottom(P) {
+    Object.assign(P, { level: 0, col: null, attempt: null, touched: {}, last: null, airFrames: 0, blind: false, tele: null });
+  }
+
+  reset() {
+    this.players = this.players.map(() => this.#fresh());
+  }
+
+  resize(n) {
+    while (this.players.length < n) this.players.push(this.#fresh());
+    this.players.length = n;
+  }
+
+  /** Manual correction: player is standing on (level, col); level 0 = bottom. */
+  place(p, level, col = null) {
+    this.#bottom(this.players[p]);
+    Object.assign(this.players[p], { level, col });
+  }
+
+  /** Attempts in progress, for steering teammates' advice. */
+  pending() {
+    return this.players.flatMap((P, player) => (P.attempt ? [{ player, level: P.attempt.level, col: P.attempt.col }] : []));
+  }
+
+  /** obs[p] = cell | null; `skip` = seats not watched by this screen. Returns this frame's events. */
+  step(t, obs, skip = null) {
+    const events = [];
+    this.players.forEach((P, p) => {
+      if (skip && skip.has(p)) return;
+      const cell = obs[p] ?? null;
+      P.cell = cell;
+      if (!cell) {
+        if (P.last) P.blind = true;
+        if (t - P.lastSeen > this.timing.lostMs) P.lost = true;
+        return;
+      }
+      P.lastSeen = t;
+      P.lost = false;
+      if (cell.kind === 'plat') {
+        P.tele = null;
+        this.#onPlatform(p, cell, t, events);
+        P.airFrames = 0;
+        P.blind = false;
+      } else if (cell.kind === 'air') {
+        P.airFrames++;
+      } else {
+        this.#onBottom(p, t, events);
+      }
+    });
+    return events;
+  }
+
+  #onPlatform(p, cell, t, events) {
+    const P = this.players[p];
+    const o = this.timing;
+    const { level: r, col: c } = cell;
+    let m = P.touched[r];
+    if (!m || m.col !== c || t - m.t > o.gapMs) m = P.touched[r] = { col: c, since: t, t };
+    m.t = t;
+    P.last = { level: r, col: c, t, since: m.since };
+    const dur = t - m.since;
+
+    if (r === P.level + 1) {
+      if (dur >= o.touchMs) P.attempt = { level: r, col: c, tLast: t };
+      if (o.okMode === 'both' && dur >= o.okStandMs) this.#confirm(p, r, c, t, events);
+    } else if (r > P.level + 1) {
+      if (dur < o.touchMs) return;
+      // Came up from below: credit the platform(s) they stood on on the way, then treat this
+      // one as the next thing being tried.
+      for (let L = P.level + 1; L < r; L++) {
+        const q = P.touched[L];
+        if (o.okMode !== 'off' && q && q.t - q.since >= o.pressMs) this.#confirm(p, L, q.col, q.t, events);
+        else Object.assign(P, { level: L, col: q ? q.col : null, attempt: null });
+      }
+      this.#onPlatform(p, cell, t, events);
+    } else if (r === P.level) {
+      P.col ??= c;
+      if (dur >= o.touchMs) P.attempt = null; // landed back on the confirmed level: a missed jump
+    } else if (dur >= o.touchMs) {
+      Object.assign(P, { level: r, col: c, attempt: null, touched: {} }); // dropped to a lower platform
+    }
+  }
+
+  #confirm(p, level, col, t, events) {
+    Object.assign(this.players[p], { level, col, attempt: null });
+    events.push({ type: 'ok', player: p, level, col, t });
+  }
+
+  #onBottom(p, t, events) {
+    const P = this.players[p];
+    const o = this.timing;
+    if (P.tele) {
+      if (t - P.tele.t >= o.teleConfirmMs) {
+        events.push({ type: 'bad', player: p, level: P.tele.level, col: P.tele.col, t });
+        this.#bottom(P);
+      }
+      return;
+    }
+    const L = P.last;
+    if (!L) {
+      if (P.level) this.#bottom(P);
+      return;
+    }
+    const stood = L.t - L.since >= o.touchMs;
+    const gap = t - L.t;
+    if (stood) {
+      if (P.airFrames === 0 && !P.blind && gap <= o.teleportMs) {
+        P.tele = { level: L.level, col: L.col, t };
+        return;
+      }
+      if (P.blind && gap <= o.lostGapMs) events.push({ type: 'unknownFall', player: p, level: L.level, col: L.col, t });
+    }
+    this.#bottom(P); // an ordinary fall: back at the bottom, nothing learned
+  }
+}
+
+// Name-tag tracking by normalised cross-correlation on a grayscale copy of the frame.
+//
+// Each player's name tag is cut out once as a template. Every frame we search near where it
+// was last seen on a half-resolution image (cheap), then refine at full resolution. A global
+// search over the whole frame is available for re-acquiring a lost tag.
+
+function toGray(rgba, n, out) {
+  const g = out && out.length === n ? out : new Uint8Array(n);
+  for (let i = 0, j = 0; i < n; i++, j += 4) g[i] = (77 * rgba[j] + 150 * rgba[j + 1] + 29 * rgba[j + 2]) >> 8;
+  return g;
+}
+
+function halve(src, W, H, out) {
+  const w2 = W >> 1;
+  const h2 = H >> 1;
+  const dst = out && out.length === w2 * h2 ? out : new Float32Array(w2 * h2);
+  for (let y = 0; y < h2; y++) {
+    let a = 2 * y * W;
+    let b = a + W;
+    for (let x = 0; x < w2; x++, a += 2, b += 2) dst[y * w2 + x] = (src[a] + src[a + 1] + src[b] + src[b + 1]) / 4;
+  }
+  return dst;
+}
+
+function zeroMean(data) {
+  let mean = 0;
+  for (let i = 0; i < data.length; i++) mean += data[i];
+  mean /= data.length;
+  const out = new Float32Array(data.length);
+  let ss = 0;
+  for (let i = 0; i < data.length; i++) {
+    out[i] = data[i] - mean;
+    ss += out[i] * out[i];
+  }
+  return { data: out, norm: Math.sqrt(ss) };
+}
+
+/** Cut a template out of a gray frame. Coordinates are snapped to even pixels. */
+function makeTemplate(gray, W, H, rect) {
+  const x = Math.max(0, Math.min(W - 8, rect.x & ~1));
+  const y = Math.max(0, Math.min(H - 8, rect.y & ~1));
+  const w = Math.min(W - x, rect.w) & ~1;
+  const h = Math.min(H - y, rect.h) & ~1;
+  if (w < 8 || h < 6) return null;
+  const raw = new Uint8Array(w * h);
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) raw[j * w + i] = gray[(y + j) * W + x + i];
+  return { ...buildTemplate(raw, w, h), x, y };
+}
+
+/** Rebuild a template from its raw gray bytes (used when restoring from storage). */
+function buildTemplate(raw, w, h) {
+  const full = zeroMean(raw);
+  const half = zeroMean(halve(raw, w, h));
+  return { raw, w, h, full, half, w2: w >> 1, h2: h >> 1 };
+}
+
+class Tracker {
+  constructor() {
+    this.W = 0;
+    this.H = 0;
+  }
+
+  /** Load a new frame (RGBA ImageData bytes or an already-gray Uint8Array). */
+  setFrame(pixels, W, H, isGray = false) {
+    const n = W * H;
+    this.gray = isGray ? pixels : toGray(pixels, n, this._gray);
+    if (!isGray) this._gray = this.gray;
+    this.W = W;
+    this.H = H;
+    const w2 = W >> 1;
+    const h2 = H >> 1;
+    this.half = halve(this.gray, W, H, this.half);
+    this.W2 = w2;
+    this.H2 = h2;
+    const iw = w2 + 1;
+    if (!this.sum || this.sum.length !== iw * (h2 + 1)) {
+      this.sum = new Float64Array(iw * (h2 + 1));
+      this.sq = new Float64Array(iw * (h2 + 1));
+    }
+    const { sum, sq, half } = this;
+    for (let y = 0; y < h2; y++) {
+      let rs = 0;
+      let rq = 0;
+      for (let x = 0; x < w2; x++) {
+        const v = half[y * w2 + x];
+        rs += v;
+        rq += v * v;
+        sum[(y + 1) * iw + x + 1] = sum[y * iw + x + 1] + rs;
+        sq[(y + 1) * iw + x + 1] = sq[y * iw + x + 1] + rq;
+      }
+    }
+  }
+
+  // best match of the half-res template with top-left in [x0..x1] x [y0..y1] (half-res px)
+  #searchHalf(tpl, x0, y0, x1, y1) {
+    const { half, W2: w2, sum, sq } = this;
+    const iw = w2 + 1;
+    const { w2: tw, h2: th } = tpl;
+    const T = tpl.half.data;
+    const norm = tpl.half.norm;
+    const N = tw * th;
+    x0 = Math.max(0, x0);
+    y0 = Math.max(0, y0);
+    x1 = Math.min(w2 - tw, x1);
+    y1 = Math.min(this.H2 - th, y1);
+    let best = { x: 0, y: 0, score: -1 };
+    if (norm < 1e-6) return best;
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const s = sum[(y + th) * iw + x + tw] - sum[y * iw + x + tw] - sum[(y + th) * iw + x] + sum[y * iw + x];
+        const q = sq[(y + th) * iw + x + tw] - sq[y * iw + x + tw] - sq[(y + th) * iw + x] + sq[y * iw + x];
+        const varI = q - (s * s) / N;
+        if (varI < 4 * N) continue; // flat region
+        let dot = 0;
+        for (let j = 0; j < th; j++) {
+          let ii = (y + j) * w2 + x;
+          let ti = j * tw;
+          for (let i = 0; i < tw; i++) dot += half[ii++] * T[ti++];
+        }
+        const score = dot / (Math.sqrt(varI) * norm);
+        if (score > best.score) best = { x, y, score };
+      }
+    }
+    return best;
+  }
+
+  // exact full-resolution NCC at one top-left position
+  #nccFull(tpl, x, y) {
+    const { gray, W } = this;
+    const { w, h } = tpl;
+    const T = tpl.full.data;
+    let s = 0;
+    let q = 0;
+    let dot = 0;
+    for (let j = 0; j < h; j++) {
+      let ii = (y + j) * W + x;
+      let ti = j * w;
+      for (let i = 0; i < w; i++) {
+        const v = gray[ii++];
+        s += v;
+        q += v * v;
+        dot += v * T[ti++];
+      }
+    }
+    const N = w * h;
+    const varI = q - (s * s) / N;
+    if (varI < 4 * N || tpl.full.norm < 1e-6) return -1;
+    return dot / (Math.sqrt(varI) * tpl.full.norm);
+  }
+
+  /** NCC of the template with its top-left at exactly (x, y); -1 when outside the frame. */
+  score(tpl, x, y) {
+    if (!this.gray || !tpl || x < 0 || y < 0 || x + tpl.w > this.W || y + tpl.h > this.H) return -1;
+    return this.#nccFull(tpl, x, y);
+  }
+
+  /**
+   * Find the template. `hint` = {x, y} top-left where it was last seen; search ±radius
+   * around it. Without a hint (or with global=true) the whole region is searched.
+   * Returns {x, y, score} in full-resolution pixels, or null.
+   */
+  find(tpl, { hint = null, radius = 90, global = false, region = null } = {}) {
+    if (!this.gray || !tpl) return null;
+    let coarse;
+    if (hint && !global) {
+      const hx = hint.x >> 1;
+      const hy = hint.y >> 1;
+      const r = Math.ceil(radius / 2);
+      coarse = this.#searchHalf(tpl, hx - r, hy - r, hx + r, hy + r);
+    } else {
+      const rg = region ?? { x: 0, y: 0, w: this.W, h: this.H };
+      coarse = this.#searchHalf(tpl, rg.x >> 1, rg.y >> 1, (rg.x + rg.w) >> 1, (rg.y + rg.h) >> 1);
+    }
+    if (coarse.score < 0.3) return null;
+    let best = { x: coarse.x * 2, y: coarse.y * 2, score: -1 };
+    for (let dy = -3; dy <= 3; dy++) {
+      for (let dx = -3; dx <= 3; dx++) {
+        const x = coarse.x * 2 + dx;
+        const y = coarse.y * 2 + dy;
+        if (x < 0 || y < 0 || x + tpl.w > this.W || y + tpl.h > this.H) continue;
+        const score = this.#nccFull(tpl, x, y);
+        if (score > best.score) best = { x, y, score };
+      }
+    }
+    return best.score < 0 ? null : best;
+  }
+}
+
+// Conflict-free merging of the result log between devices.
+//
+// Every entry is keyed by (player, level, col) and carries the time it was written; the newest
+// write for a key wins. Deleting an entry leaves a tombstone (key -> time) so an older copy
+// arriving late cannot bring it back. Applying the same set of entries / tombstones in any
+// order, any number of times, gives the same log - which is what keeps four players' screens
+// in agreement.
+
+
+const keyOf = (e) => `${e.player}:${e.level}:${e.col}`;
+
+/** Accept only well-formed entries (they arrive from other people's browsers). */
+function cleanEntry(e) {
+  if (!e || typeof e !== 'object') return null;
+  const { player, level, col, type, t } = e;
+  if (!Number.isInteger(player) || player < 0 || player > 3) return null;
+  if (!Number.isInteger(level) || level < 1 || level > LEVELS) return null;
+  if (!Number.isInteger(col) || col < 0 || col >= COLS) return null;
+  if (type !== 'ok' && type !== 'bad') return null;
+  if (!Number.isFinite(t)) return null;
+  return { player, level, col, type, t, source: e.source === 'auto' ? 'auto' : 'manual' };
+}
+
+/**
+ * Merge `incoming` ({entries, tombs}) into `base` ({log, tomb}). Pure: returns new objects and
+ * whether anything changed. `nextId` supplies ids for entries that are new to this device.
+ */
+function mergeLog(base, incoming, nextId) {
+  const tomb = { ...base.tomb };
+  let log = base.log.slice();
+  let changed = false;
+
+  for (const [k, ts] of Object.entries(incoming.tombs || {})) {
+    if (!Number.isFinite(ts) || !(ts > (tomb[k] ?? 0))) continue;
+    tomb[k] = ts;
+    log = log.filter((e) => !(keyOf(e) === k && e.t <= ts));
+    changed = true;
+  }
+
+  for (const raw of incoming.entries || []) {
+    const e = cleanEntry(raw);
+    if (!e) continue;
+    const k = keyOf(e);
+    if ((tomb[k] ?? 0) >= e.t) continue;
+    const cur = log.find((x) => keyOf(x) === k);
+    if (cur && (cur.t > e.t || (cur.t === e.t && cur.type >= e.type))) continue;
+    log = log.filter((x) => x !== cur);
+    log.push({ ...e, id: nextId() });
+    changed = true;
+  }
+  return { log, tomb, changed };
+}
+
+// Collects solved layouts across runs and asks: is the answer random, or are there fixed
+// combinations? A "path" is one player's correct column on levels 1..LEVELS (null = unknown).
+//
+// A run = { id, savedAt, rule, n, names, paths } with one path per player (latin) or a single
+// shared path (shared).
+
+
+/** Pull the known answers out of the solver's analysis. Returns null if nothing is known. */
+function extractRun(analysis, n, rule) {
+  const players = rule === 'shared' ? 1 : n;
+  const paths = Array.from({ length: players }, (_, p) =>
+    Array.from({ length: LEVELS }, (_, i) => {
+      const c = analysis[i + 1].cands[p];
+      return c.length === 1 ? c[0] : null;
+    }),
+  );
+  return paths.some((path) => path.some((c) => c !== null)) ? paths : null;
+}
+
+// ---- distributions ------------------------------------------------------------------
+
+function gammaQ(a, x) {
+  // regularised upper incomplete gamma Q(a, x), Numerical Recipes style
+  if (x <= 0) return 1;
+  const gln = lgamma(a);
+  if (x < a + 1) {
+    let ap = a;
+    let sum = 1 / a;
+    let del = sum;
+    for (let i = 0; i < 300; i++) {
+      ap++;
+      del *= x / ap;
+      sum += del;
+      if (Math.abs(del) < Math.abs(sum) * 1e-14) break;
+    }
+    return 1 - sum * Math.exp(-x + a * Math.log(x) - gln);
+  }
+  let b = x + 1 - a;
+  let c = 1e300;
+  let d = 1 / b;
+  let h = d;
+  for (let i = 1; i < 300; i++) {
+    const an = -i * (i - a);
+    b += 2;
+    d = an * d + b;
+    if (Math.abs(d) < 1e-300) d = 1e-300;
+    c = b + an / c;
+    if (Math.abs(c) < 1e-300) c = 1e-300;
+    d = 1 / d;
+    const del = d * c;
+    h *= del;
+    if (Math.abs(del - 1) < 1e-14) break;
+  }
+  return Math.exp(-x + a * Math.log(x) - gln) * h;
+}
+
+function lgamma(z) {
+  const g = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+  let y = z;
+  let tmp = z + 5.5;
+  tmp -= (z + 0.5) * Math.log(tmp);
+  let ser = 1.000000000190015;
+  for (const c of g) ser += c / ++y;
+  return -tmp + Math.log((2.5066282746310005 * ser) / z);
+}
+
+/** P(chi-square with df degrees of freedom >= x) */
+const chiSquareP = (x, df) => gammaQ(df / 2, x / 2);
+
+/** P(X >= k) for X ~ Poisson(lambda) */
+function poissonTail(k, lambda) {
+  if (k <= 0) return 1;
+  let term = Math.exp(-lambda);
+  let cdf = 0;
+  for (let i = 0; i < k; i++) {
+    cdf += term;
+    term *= lambda / (i + 1);
+  }
+  return Math.max(0, 1 - cdf);
+}
+
+// ---- analysis -----------------------------------------------------------------------
+
+const knownPrefix = (path) => {
+  let k = 0;
+  while (k < LEVELS && path[k] !== null && path[k] !== undefined) k++;
+  return k;
+};
+
+/**
+ * Everything the stats panel shows. `minPaths` is how much data is needed before a verdict.
+ */
+function summarize(runs, { minPaths = 12 } = {}) {
+  const all = runs.flatMap((run) => run.paths.map((path) => ({ run: run.id, path })));
+
+  // column frequency per level, uniform-ness
+  const levels = Array.from({ length: LEVELS }, (_, i) => {
+    const counts = new Array(COLS).fill(0);
+    for (const { path } of all) if (path[i] !== null && path[i] !== undefined) counts[path[i]]++;
+    const total = counts.reduce((a, b) => a + b, 0);
+    let chi2 = 0;
+    for (const c of counts) chi2 += ((c - total / COLS) ** 2) / (total / COLS || 1);
+    return { level: i + 1, counts, total, chi2, p: total >= 8 ? chiSquareP(chi2, COLS - 1) : null };
+  });
+
+  // does the column on level L+1 depend on the one on level L?
+  const table = Array.from({ length: COLS }, () => new Array(COLS).fill(0));
+  let pairs = 0;
+  let same = 0;
+  for (const { path } of all) {
+    for (let i = 0; i + 1 < LEVELS; i++) {
+      if (path[i] == null || path[i + 1] == null) continue;
+      table[path[i]][path[i + 1]]++;
+      pairs++;
+      if (path[i] === path[i + 1]) same++;
+    }
+  }
+  let tChi2 = 0;
+  const rowT = table.map((r) => r.reduce((a, b) => a + b, 0));
+  const colT = [0, 1, 2, 3].map((c) => table.reduce((a, r) => a + r[c], 0));
+  for (let r = 0; r < COLS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const e = (rowT[r] * colT[c]) / (pairs || 1);
+      if (e > 0) tChi2 += ((table[r][c] - e) ** 2) / e;
+    }
+  }
+  const transitions = { table, pairs, sameRate: pairs ? same / pairs : null, chi2: tChi2, p: pairs >= 40 ? chiSquareP(tChi2, (COLS - 1) ** 2) : null };
+
+  // do different runs share the same opening sequence more often than chance?
+  const repeats = [];
+  for (let m = 1; m <= LEVELS; m++) {
+    const groups = new Map();
+    let N = 0;
+    for (const { run, path } of all) {
+      if (knownPrefix(path) < m) continue;
+      N++;
+      const key = path.slice(0, m).join('');
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(run);
+    }
+    // cross-run pairs only: teammates in one run can never hold the same path
+    const perRun = new Map();
+    for (const { run, path } of all) if (knownPrefix(path) >= m) perRun.set(run, (perRun.get(run) || 0) + 1);
+    let crossPairs = (N * (N - 1)) / 2;
+    for (const k of perRun.values()) crossPairs -= (k * (k - 1)) / 2;
+    let observed = 0;
+    let top = null;
+    for (const [key, list] of groups) {
+      const byRun = new Map();
+      for (const r of list) byRun.set(r, (byRun.get(r) || 0) + 1);
+      let g = (list.length * (list.length - 1)) / 2;
+      for (const k of byRun.values()) g -= (k * (k - 1)) / 2;
+      observed += g;
+      if (!top || list.length > top.count) top = { prefix: key.split('').map(Number), count: list.length };
+    }
+    const expected = crossPairs / COLS ** m;
+    repeats.push({ prefix: m, paths: N, distinct: groups.size, observed, expected, p: crossPairs >= 10 ? poissonTail(observed, expected) : null, top });
+  }
+
+  // verdict
+  const nPaths = all.filter(({ path }) => knownPrefix(path) >= 1).length;
+  let verdict = 'insufficient';
+  const flagged = [];
+  if (nPaths >= minPaths) {
+    for (const r of repeats) if (r.p !== null && r.p < 0.001 && r.observed >= 3) flagged.push(`repeat@${r.prefix}`);
+    for (const l of levels) if (l.p !== null && l.p < 0.001) flagged.push(`level${l.level}`);
+    if (transitions.p !== null && transitions.p < 0.001) flagged.push('transitions');
+    verdict = flagged.length ? 'pattern' : 'random';
+  }
+  return { runs: runs.length, paths: nPaths, levels, transitions, repeats, verdict, flagged };
+}
+
+/**
+ * Given the contiguous known prefix of one player's path, what did stored paths do next?
+ * Returns {matches, counts[4], next, share} or null when there is nothing to go on.
+ */
+function predictNext(runs, prefix, { excludeRun = null } = {}) {
+  const k = prefix.length;
+  if (k >= LEVELS) return null;
+  const counts = new Array(COLS).fill(0);
+  let matches = 0;
+  for (const run of runs) {
+    if (run.id === excludeRun) continue;
+    for (const path of run.paths) {
+      if (path[k] == null) continue;
+      if (prefix.every((c, i) => path[i] === c)) {
+        counts[path[k]]++;
+        matches++;
+      }
+    }
+  }
+  if (!matches) return null;
+  const next = counts.indexOf(Math.max(...counts));
+  return { matches, counts, next, share: counts[next] / matches };
+}
+
+// ---- export / import ----------------------------------------------------------------
+
+function runsToCSV(runs) {
+  const head = ['run_id', 'saved_at', 'rule', 'player', 'name', ...Array.from({ length: LEVELS }, (_, i) => `L${i + 1}`)];
+  const lines = [head.join(',')];
+  for (const run of runs) {
+    run.paths.forEach((path, p) => {
+      const name = (run.names?.[p] ?? '').replace(/"/g, '""');
+      lines.push([run.id, new Date(run.savedAt).toISOString(), run.rule, p + 1, `"${name}"`, ...path.map((c) => (c == null ? '' : c + 1))].join(','));
+    });
+  }
+  return lines.join('\n');
+}
+
+/** Validate + merge imported runs (by id). Returns the merged list and how many were new. */
+function mergeRuns(existing, incoming) {
+  const byId = new Map(existing.map((r) => [r.id, r]));
+  let added = 0;
+  for (const r of Array.isArray(incoming) ? incoming : []) {
+    const ok =
+      r &&
+      typeof r.id === 'string' &&
+      (r.rule === 'latin' || r.rule === 'shared') &&
+      Array.isArray(r.paths) &&
+      r.paths.every((p) => Array.isArray(p) && p.length === LEVELS && p.every((c) => c === null || (Number.isInteger(c) && c >= 0 && c < COLS)));
+    if (!ok) continue;
+    if (!byId.has(r.id)) added++;
+    byId.set(r.id, { id: r.id, savedAt: Number(r.savedAt) || Date.now(), rule: r.rule, n: r.paths.length, names: Array.isArray(r.names) ? r.names.map(String) : [], paths: r.paths });
+  }
+  return { runs: [...byId.values()], added };
+}
+
+// Headless simulation of a full run. Used by the demo button and by the tests to check
+// that the advice always gets every player to the top without ever repeating a platform.
+
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shuffle(arr, rnd) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function createSim({ mode = 'latin', n = 4, seed = 1, maxTesters = COLS } = {}) {
+  const rnd = mulberry32(seed);
+  // truth[L][p] = the column that is correct for player p on level L
+  const truth = [null];
+  for (let L = 1; L <= LEVELS; L++) {
+    if (mode === 'shared') truth.push(new Array(n).fill(Math.floor(rnd() * COLS)));
+    else truth.push(shuffle([0, 1, 2, 3], rnd).slice(0, n));
+  }
+  const sim = {
+    truth,
+    facts: [],
+    levels: new Array(n).fill(0),
+    prev: [],
+    falls: 0,
+    rounds: 0,
+    log: [],
+    get done() {
+      return this.levels.every((l) => l >= LEVELS);
+    },
+    /** One round: every ready tester attempts at once, everyone else climbs. */
+    step() {
+      const { plans } = advise({ facts: this.facts, levels: this.levels, mode, maxTesters, prev: this.prev });
+      const events = [];
+      const seen = new Map();
+      for (const pl of plans) {
+        if (pl.done) continue;
+        if (pl.test && pl.ready) {
+          const { level: L, col } = pl.test;
+          const key = `${L}:${col}`;
+          if (seen.has(key)) {
+            throw new Error(`players ${seen.get(key)} and ${pl.player} both sent to level ${L} platform ${col}`);
+          }
+          seen.set(key, pl.player);
+          const ok = truth[L][pl.player] === col;
+          this.facts.push({ level: L, player: pl.player, col, ok });
+          events.push({ type: ok ? 'ok' : 'bad', player: pl.player, level: L, col });
+          if (ok) this.levels[pl.player] = L;
+          else {
+            this.levels[pl.player] = 0;
+            this.falls++;
+          }
+        } else if (pl.test) {
+          this.levels[pl.player] = pl.testLevel - 1; // climbs the known route
+          events.push({ type: 'climb', player: pl.player, level: pl.testLevel - 1 });
+        } else if (!pl.wait) {
+          this.levels[pl.player] = LEVELS; // whole route known
+          events.push({ type: 'climb', player: pl.player, level: LEVELS });
+        }
+      }
+      this.prev = plans.map((pl) => pl.test);
+      this.rounds++;
+      this.log.push(...events);
+      return events;
+    },
+  };
+  return sim;
+}
+
+// Shared app state, persistence and the result log (the single source of truth for what
+// the team has learned). Both detection and manual input write here through recordResult().
+
+
+const COLORS = ['#ff6b6b', '#4dabf7', '#51cf66', '#fcc419'];
+// ?profile=name keeps a separate saved state per tab (several game clients on one PC)
+const PROFILE = new URLSearchParams(typeof location === 'undefined' ? '' : location.search).get('profile');
+const SUFFIX = PROFILE ? `:${PROFILE.slice(0, 16)}` : '';
+const KEY = `maple-rj-helper/v1${SUFFIX}`;
+const DATA_KEY = `maple-rj-helper/data-v1${SUFFIX}`;
+
+const DEFAULT_SETTINGS = {
+  procWidth: 1280, // frames are scaled down to this width before analysis
+  fps: 12,
+  matchThreshold: 0.8,
+  tagOffsetY: 9, // name tag centre -> feet, in analysed pixels
+  tolY: 30, // % of one level's height that still counts as "on that level"
+  tolX: 70, // % of one platform spacing
+  touchMs: 200, // standing this long = a real stop on a platform
+  okMode: 'both', // infer success: 'both' | 'advance' | 'off'
+  okStandMs: 1500,
+  teleportMs: 250, // platform -> bottom this fast with no air frames = teleported
+  collect: true, // keep every run's answers for the pattern statistics
+  voice: false,
+  autoAdoptFall: false,
+};
+
+const state = {
+  mode: 'auto', // 'auto' (screen detection) | 'manual'
+  rule: 'latin', // 'latin' (each player has their own platform) | 'shared'
+  maxTesters: 4,
+  n: 4,
+  names: ['玩家 1', '玩家 2', '玩家 3', '玩家 4'],
+  log: [], // {id, t, type:'ok'|'bad', player, level, col, source, before?}
+  tomb: {}, // "player:level:col" -> time it was deleted (so old copies cannot resurrect it)
+  runId: newRunId(),
+  runTs: 0, // when the run was last reset; the newest reset wins across the team
+  me: 0, // my seat (0-3): the player this copy detects. null = this copy handles everyone
+  room: { code: '', via: 'peer' },
+  settings: { ...DEFAULT_SETTINGS },
+  grid: null, // {x1, y1, x2, y2, groundY, procW, procH}
+  tpls: [null, null, null, null], // {raw: Uint8Array, w, h, procW}
+};
+
+const rt = {
+  engine: new Engine(4),
+  built: [null, null, null, null], // templates ready for Tracker.find
+  chosen: [], // manual platform pick per player: {level, col}
+  prev: [],
+  toasts: [],
+  seq: 0,
+  remote: [], // latest status from each teammate: {level, col, attempt, intent, name, ts}
+  peers: [], // seat -> connected?
+  hooks: {}, // set by the sync layer: fact(entry), del(key, ts), reset(runId, runTs)
+  data: { runs: [] }, // collected layouts, see stats.js
+};
+
+function newRunId() {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+const b64 = (u8) => btoa(Array.from(u8, (c) => String.fromCharCode(c)).join(''));
+const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+
+function save() {
+  try {
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({
+        ...state,
+        tpls: state.tpls.map((t) => t && { w: t.w, h: t.h, procW: t.procW, raw: b64(t.raw) }),
+      }),
+    );
+  } catch {
+    /* storage unavailable or full - the app still works without persistence */
+  }
+}
+
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (!d) return;
+    for (const k of ['mode', 'rule', 'maxTesters', 'n', 'names', 'log', 'tomb', 'runId', 'runTs', 'me', 'room', 'grid']) if (d[k] !== undefined) state[k] = d[k];
+    state.settings = { ...DEFAULT_SETTINGS, ...d.settings };
+    state.tpls = (d.tpls || []).map((t) => t && { w: t.w, h: t.h, procW: t.procW, raw: unb64(t.raw) });
+    while (state.tpls.length < 4) state.tpls.push(null);
+    rt.seq = state.log.reduce((m, e) => Math.max(m, e.id), 0);
+  } catch {
+    /* corrupt storage: start fresh */
+  }
+  try {
+    const d = JSON.parse(localStorage.getItem(DATA_KEY) || 'null');
+    if (d && Array.isArray(d.runs)) rt.data = { runs: mergeRuns([], d.runs).runs };
+  } catch {
+    /* ignore */
+  }
+  syncEngine();
+  rebuildTemplates();
+}
+
+function saveData() {
+  try {
+    localStorage.setItem(DATA_KEY, JSON.stringify({ runs: rt.data.runs, currentRun: state.runId }));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Store (or refresh) the answers learned in the current run so they can be analysed later. */
+function collectRun() {
+  if (!state.settings.collect || rt.demo) return;
+  const analysis = analyze(facts(), state.n, state.rule);
+  const paths = extractRun(analysis, state.n, state.rule);
+  const others = rt.data.runs.filter((r) => r.id !== state.runId);
+  rt.data.runs = paths
+    ? [...others, { id: state.runId, savedAt: Date.now(), rule: state.rule, n: paths.length, names: state.names.slice(0, state.n), paths }]
+    : others;
+  saveData();
+}
+
+function importRuns(incoming) {
+  const m = mergeRuns(rt.data.runs, incoming);
+  rt.data.runs = m.runs;
+  saveData();
+  return m.added;
+}
+
+function clearData() {
+  rt.data.runs = [];
+  saveData();
+}
+
+function syncEngine() {
+  rt.engine.resize(state.n);
+  const s = state.settings;
+  Object.assign(rt.engine.timing, {
+    touchMs: s.touchMs,
+    okMode: s.okMode,
+    okStandMs: s.okStandMs,
+    teleportMs: s.teleportMs,
+  });
+}
+
+function rebuildTemplates() {
+  rt.built = state.tpls.map((t) => (t ? buildTemplate(t.raw, t.w, t.h) : null));
+}
+
+const facts = () =>
+  state.log.filter((e) => e.player < state.n).map((e) => ({ level: e.level, player: e.player, col: e.col, ok: e.type === 'ok' }));
+
+const publicEntry = (e) => ({ player: e.player, level: e.level, col: e.col, type: e.type, t: e.t, source: e.source });
+
+/**
+ * Record that `player` tried (level, col). With place=true the engine's idea of where the
+ * player is gets updated too (manual input); detection has already moved it itself.
+ */
+function recordResult(player, level, col, ok, { source = 'manual', place = source === 'manual' } = {}) {
+  const P = rt.engine.players[player];
+  const before = { level: P.level, col: P.col };
+  state.log = state.log.filter((e) => !(e.player === player && e.level === level && e.col === col));
+  const entry = { id: ++rt.seq, t: Date.now(), type: ok ? 'ok' : 'bad', player, level, col, source, before };
+  state.log.push(entry);
+  if (place) rt.engine.place(player, ok ? level : 0, ok ? col : null);
+  delete rt.chosen[player];
+  save();
+  collectRun();
+  rt.hooks.fact?.(publicEntry(entry));
+}
+
+/** Drop a log entry; with restore=true also put the player back where they were. */
+function removeEntry(id, restore = false) {
+  const e = state.log.find((x) => x.id === id);
+  if (!e) return;
+  state.log = state.log.filter((x) => x.id !== id);
+  if (restore && e.before) rt.engine.place(e.player, e.before.level, e.before.col);
+  const ts = Math.max(Date.now(), e.t + 1);
+  state.tomb[keyOf(e)] = ts;
+  save();
+  collectRun();
+  rt.hooks.del?.(keyOf(e), ts);
+}
+
+function clearRun() {
+  state.log = [];
+  state.tomb = {};
+  rt.engine.reset();
+  rt.chosen = [];
+  rt.prev = [];
+  rt.toasts = [];
+}
+
+function resetRun() {
+  collectRun(); // keep what this run taught us
+  rt.demo = false;
+  state.runId = newRunId();
+  state.runTs = Date.now();
+  clearRun();
+  save();
+  rt.hooks.reset?.(state.runId, state.runTs);
+}
+
+// ---- team sync ------------------------------------------------------------------------
+
+const snapshot = () => ({ runId: state.runId, runTs: state.runTs, entries: state.log.map(publicEntry), tombs: state.tomb });
+
+/** Merge entries/tombstones from a teammate. Returns true if the log changed. */
+function mergeRemote(incoming) {
+  const r = mergeLog({ log: state.log, tomb: state.tomb }, incoming, () => ++rt.seq);
+  if (!r.changed) return false;
+  state.log = r.log;
+  state.tomb = r.tomb;
+  save();
+  collectRun();
+  return true;
+}
+
+/**
+ * A teammate announced a run. The newest reset wins and replaces ours; the same run just gets
+ * merged. Returns 'adopted' | 'merged' | 'ignored'.
+ */
+function adoptRun({ runId, runTs }) {
+  const adopt = () => {
+    collectRun();
+    state.runId = runId;
+    state.runTs = runTs;
+    clearRun();
+    save();
+    return 'adopted';
+  };
+  if (runTs > state.runTs) return adopt();
+  if (runTs < state.runTs) return 'ignored';
+  if (runId === state.runId) return 'merged';
+  if (state.runTs === 0) {
+    // two fresh copies that never reset: share one id (the smaller) so their data is one run
+    if (runId < state.runId) {
+      rt.data.runs = rt.data.runs.filter((r) => r.id !== state.runId);
+      state.runId = runId;
+      save();
+    }
+    return 'merged';
+  }
+  return runId < state.runId ? adopt() : 'ignored'; // reset in the same millisecond: smaller id wins
+}
+
+function applySnapshot(snap) {
+  const how = adoptRun(snap);
+  if (how !== 'ignored') mergeRemote(snap);
+  return how;
+}
+
+/** A teammate's live position. Returns {changed, names}. */
+function applyStatus(s) {
+  rt.remote[s.slot] = { ...s, ts: Date.now() };
+  const P = rt.engine.players[s.slot];
+  if (!P || s.slot === state.me) return { changed: false, names: false };
+  const attempt = s.attempt ? { ...s.attempt, tLast: Date.now() } : null;
+  const changed = P.level !== s.level || P.col !== s.col || JSON.stringify(P.attempt && [P.attempt.level, P.attempt.col]) !== JSON.stringify(attempt && [attempt.level, attempt.col]);
+  Object.assign(P, { level: s.level, col: s.col, attempt, lost: false, cell: null });
+  const names = !!s.name && s.name !== state.names[s.slot];
+  if (names) state.names[s.slot] = s.name;
+  return { changed, names };
+}
+
+/** What this copy tells the others about itself (null when it handles everyone). */
+function myStatus() {
+  if (state.me === null) return null;
+  const P = rt.engine.players[state.me];
+  const t = rt.prev[state.me];
+  return {
+    slot: state.me,
+    level: P.level,
+    col: P.col,
+    attempt: P.attempt ? { level: P.attempt.level, col: P.attempt.col } : null,
+    intent: t ? { level: t.level, col: t.col } : null,
+    name: state.names[state.me],
+  };
+}
+
+/** Seats whose tag this screen watches: just mine, or all of them when one copy handles everyone. */
+const watched = (p) => state.me === null || state.me === p;
+
+const isOnline = (p) => rt.peers[p] === true || (!!rt.remote[p] && Date.now() - rt.remote[p].ts < 6000);
+
+/** Current advice for everyone. */
+function computeAdvice() {
+  const levels = rt.engine.players.slice(0, state.n).map((P) => P.level);
+  const pending = state.mode === 'auto' ? rt.engine.pending() : [];
+  rt.chosen.forEach((c, player) => c && player < state.n && pending.push({ player, ...c }));
+  // With teammates connected, the advice they were given is the one they publish.
+  const prev = state.me === null ? rt.prev : Array.from({ length: state.n }, (_, p) => (p === state.me ? rt.prev[p] : (rt.remote[p] && rt.remote[p].intent) || null));
+  const res = advise({ facts: facts(), levels, mode: state.rule, maxTesters: state.maxTesters, prev, pending });
+  rt.prev = res.plans.map((pl) => pl.test);
+  return res;
+}
+
+// Team sync. Each player runs their own copy (they are in separate rooms and can only see
+// themselves), so results, positions and run resets are exchanged between the four copies.
+//
+// Transports:
+//   PeerTransport      WebRTC mesh through the public PeerJS signalling server. Seats have fixed
+//                      ids (rj-<room>-<seat>) so nobody needs a host or any discovery step.
+//   BroadcastTransport tabs of the same browser (testing, or several game clients on one PC).
+// Share codes are the no-network fallback: copy a code out, paste it into a teammate's copy.
+
+
+const MAX_NAME = 12;
+
+// ---- message validation (everything below arrives from other people's browsers) --------
+
+function cleanStatus(s) {
+  if (!s || typeof s !== 'object') return null;
+  const int = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
+  if (!int(s.slot, 0, 3) || !int(s.level, 0, 10)) return null;
+  const col = s.col === null || int(s.col, 0, 3) ? s.col : null;
+  const pair = (p) => (p && int(p.level, 1, 10) && int(p.col, 0, 3) ? { level: p.level, col: p.col } : null);
+  return {
+    slot: s.slot,
+    level: s.level,
+    col,
+    attempt: pair(s.attempt),
+    intent: pair(s.intent),
+    name: typeof s.name === 'string' ? s.name.slice(0, MAX_NAME) : '',
+  };
+}
+
+function cleanSnapshot(s) {
+  if (!s || typeof s !== 'object' || typeof s.runId !== 'string' || !Number.isFinite(s.runTs)) return null;
+  const tombs = {};
+  for (const [k, v] of Object.entries(s.tombs && typeof s.tombs === 'object' ? s.tombs : {})) {
+    if (/^[0-3]:\d{1,2}:[0-3]$/.test(k) && Number.isFinite(v)) tombs[k] = v;
+  }
+  return {
+    runId: s.runId.slice(0, 40),
+    runTs: s.runTs,
+    entries: (Array.isArray(s.entries) ? s.entries.slice(0, 400) : []).map(cleanEntry).filter(Boolean),
+    tombs,
+  };
+}
+
+// ---- protocol -------------------------------------------------------------------------
+
+/**
+ * Speaks the protocol over any transport. `hooks` receive already-validated data:
+ *   onSnapshot(snap, from)  onFact(entry)  onDel(key, ts)  onReset({runId, runTs})
+ *   onStatus(status)        onPeer(slot, online)
+ * `snapshot()` supplies this device's full state when a peer says hello.
+ */
+class Session {
+  constructor(transport, { slot, snapshot, hooks }) {
+    this.transport = transport;
+    this.slot = slot;
+    this.snapshot = snapshot;
+    this.hooks = hooks;
+    transport.onmessage = (msg, from) => this.#receive(msg, from);
+    transport.onpeer = (slot2, online) => {
+      hooks.onPeer?.(slot2, online);
+      if (online) this.hello(true);
+    };
+  }
+
+  hello(reply) {
+    this.transport.send({ t: 'hello', slot: this.slot, reply, snap: this.snapshot() });
+  }
+
+  sendFact(entry) {
+    this.transport.send({ t: 'fact', slot: this.slot, e: entry });
+  }
+
+  sendDel(key, ts) {
+    this.transport.send({ t: 'del', slot: this.slot, key, ts });
+  }
+
+  sendReset(runId, runTs) {
+    this.transport.send({ t: 'reset', slot: this.slot, runId, runTs });
+  }
+
+  sendStatus(status) {
+    this.transport.send({ t: 'status', slot: this.slot, s: status });
+  }
+
+  close() {
+    this.transport.close();
+  }
+
+  #receive(msg) {
+    if (!msg || typeof msg !== 'object' || msg.slot === this.slot) return;
+    const h = this.hooks;
+    switch (msg.t) {
+      case 'hello': {
+        const snap = cleanSnapshot(msg.snap);
+        if (snap) h.onSnapshot?.(snap, msg.slot);
+        if (msg.reply) this.hello(false);
+        break;
+      }
+      case 'fact': {
+        const e = cleanEntry(msg.e);
+        if (e) h.onFact?.(e);
+        break;
+      }
+      case 'del':
+        if (typeof msg.key === 'string' && /^[0-3]:\d{1,2}:[0-3]$/.test(msg.key) && Number.isFinite(msg.ts)) h.onDel?.(msg.key, msg.ts);
+        break;
+      case 'reset':
+        if (typeof msg.runId === 'string' && Number.isFinite(msg.runTs)) h.onReset?.({ runId: msg.runId.slice(0, 40), runTs: msg.runTs });
+        break;
+      case 'status': {
+        const s = cleanStatus(msg.s);
+        if (s && s.slot === msg.slot) h.onStatus?.(s);
+        break;
+      }
+    }
+  }
+}
+
+// ---- transports ------------------------------------------------------------------------
+
+class BroadcastTransport {
+  constructor(room, slot) {
+    this.slot = slot;
+    this.ch = new BroadcastChannel(`rj-${room}`);
+    this.ch.onmessage = (e) => this.onmessage?.(e.data);
+    this.seen = new Set();
+  }
+
+  /** Announce presence so tabs that were already open notice us (and we them). */
+  open() {
+    this.ch.postMessage({ t: 'ping', slot: this.slot });
+    const prev = this.ch.onmessage;
+    this.ch.onmessage = (e) => {
+      const m = e.data;
+      if (m && m.slot !== undefined && m.slot !== this.slot && !this.seen.has(m.slot)) {
+        this.seen.add(m.slot);
+        this.onpeer?.(m.slot, true);
+        if (m.t === 'ping') this.ch.postMessage({ t: 'ping', slot: this.slot });
+      }
+      if (m && m.t !== 'ping') prev(e);
+    };
+    return Promise.resolve();
+  }
+
+  send(msg) {
+    this.ch.postMessage(msg);
+  }
+
+  close() {
+    this.ch.close();
+  }
+}
+
+function loadPeerJS() {
+  if (window.Peer) return Promise.resolve(window.Peer);
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
+    s.onload = () => (window.Peer ? resolve(window.Peer) : reject(new Error('PeerJS 載入失敗')));
+    s.onerror = () => reject(new Error('無法載入連線元件(網路或擋廣告外掛?)'));
+    document.head.append(s);
+  });
+}
+
+/**
+ * Full mesh over WebRTC. To keep exactly one connection per pair, a seat only dials the seats
+ * below it; the lower seats just wait for the call. A retry timer redials dropped links.
+ */
+class PeerTransport {
+  constructor(room, slot, Peer) {
+    this.room = room;
+    this.slot = slot;
+    this.Peer = Peer;
+    this.conns = new Map(); // seat -> open DataConnection
+    this.dialing = new Set();
+  }
+
+  id(seat) {
+    return `rj-${this.room}-${seat}`;
+  }
+
+  open() {
+    return new Promise((resolve, reject) => {
+      this.peer = new this.Peer(this.id(this.slot));
+      this.peer.on('open', () => {
+        this.peer.on('connection', (c) => this.#adopt(c, this.#seatOf(c.peer)));
+        this.#dial();
+        this.timer = setInterval(() => this.#dial(), 3000);
+        resolve();
+      });
+      this.peer.on('error', (err) => {
+        if (err && err.type === 'unavailable-id') reject(new Error(`座位 ${this.slot + 1} 已經有人在用了(房間代碼相同)`));
+        else if (err && err.type !== 'peer-unavailable') this.onerror?.(err);
+      });
+    });
+  }
+
+  #seatOf(peerId) {
+    const m = new RegExp(`^rj-${this.room.replace(/[^\w-]/g, '')}-([0-3])$`).exec(peerId || '');
+    return m ? Number(m[1]) : null;
+  }
+
+  #dial() {
+    for (let seat = 0; seat < this.slot; seat++) {
+      if (this.conns.has(seat) || this.dialing.has(seat)) continue;
+      this.dialing.add(seat);
+      const c = this.peer.connect(this.id(seat), { reliable: true });
+      this.#adopt(c, seat);
+    }
+  }
+
+  #adopt(conn, seat) {
+    if (seat === null || seat === this.slot) return conn.close();
+    conn.on('open', () => {
+      this.dialing.delete(seat);
+      this.conns.get(seat)?.close();
+      this.conns.set(seat, conn);
+      this.onpeer?.(seat, true);
+    });
+    conn.on('data', (d) => this.onmessage?.(d, seat));
+    const gone = () => {
+      this.dialing.delete(seat);
+      if (this.conns.get(seat) === conn) {
+        this.conns.delete(seat);
+        this.onpeer?.(seat, false);
+      }
+    };
+    conn.on('close', gone);
+    conn.on('error', gone);
+    // a dial that never opens (the other side is not there yet) must not block retries
+    setTimeout(() => this.dialing.delete(seat), 4000);
+  }
+
+  send(msg) {
+    for (const c of this.conns.values()) if (c.open) c.send(msg);
+  }
+
+  close() {
+    clearInterval(this.timer);
+    this.peer?.destroy();
+    this.conns.clear();
+  }
+}
+
+// ---- share codes (no-network fallback) -----------------------------------------------------
+
+const toB64 = (s) => btoa(String.fromCharCode(...new TextEncoder().encode(s)));
+const fromB64 = (b) => new TextDecoder().decode(Uint8Array.from(atob(b), (c) => c.charCodeAt(0)));
+
+function encodeShare(snapshot, status) {
+  return `RJ1.${toB64(JSON.stringify({ snap: snapshot, status }))}`;
+}
+
+/** Returns {snap, status} or null if the text is not a valid share code. */
+function decodeShare(text) {
+  try {
+    const m = /RJ1\.([A-Za-z0-9+/=]+)/.exec(String(text));
+    if (!m) return null;
+    const d = JSON.parse(fromB64(m[1]));
+    const snap = cleanSnapshot(d.snap);
+    return snap ? { snap, status: cleanStatus(d.status) } : null;
+  } catch {
+    return null;
+  }
+}
+
+// Wraps the hidden <video> that supplies frames: screen/window share, or a video file
+// (handy for trying the detector on a recording).
+
+class Capture {
+  constructor(video) {
+    this.video = video;
+    this.stream = null;
+    this.url = null;
+    this.onEnded = null;
+  }
+
+  get active() {
+    return this.video.readyState >= 2 && this.video.videoWidth > 0;
+  }
+
+  async startScreen() {
+    const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: false });
+    await this.useStream(stream);
+  }
+
+  async useStream(stream) {
+    this.stop();
+    this.stream = stream;
+    this.video.srcObject = stream;
+    stream.getVideoTracks()[0]?.addEventListener('ended', () => this.onEnded?.());
+    await this.video.play();
+  }
+
+  async startFile(file) {
+    this.stop();
+    this.url = URL.createObjectURL(file);
+    this.video.src = this.url;
+    this.video.loop = true;
+    await this.video.play();
+  }
+
+  stop() {
+    this.stream?.getTracks().forEach((t) => t.stop());
+    this.stream = null;
+    this.video.pause();
+    this.video.srcObject = null;
+    this.video.removeAttribute('src');
+    this.video.load();
+    if (this.url) URL.revokeObjectURL(this.url);
+    this.url = null;
+  }
+}
+
+// DOM rendering. Everything here is derived from `state` / `rt`; user actions are wired in app.js
+// through data-act attributes.
+
+
+const $ = (s) => document.querySelector(s);
+const CIRC = ['①', '②', '③', '④'];
+const esc = (s) => String(s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+const pname = (p) => esc(state.names[p] || `玩家 ${p + 1}`);
+const pc = (p) => `style="--pc:${COLORS[p]}"`;
+const clock = (t) => new Date(t).toLocaleTimeString('zh-TW', { hour12: false });
+const pct = (x) => `${Math.round(x * 100)}%`;
+
+// ---- advice cards -------------------------------------------------------------------
+
+function hintFor(pl, advice) {
+  if (!pl.testLevel || pl.cands.length < 2) return '';
+  const prefix = [];
+  for (let L = 1; L < pl.testLevel; L++) {
+    const c = advice.analysis[L].cands[pl.player];
+    if (c.length !== 1) return '';
+    prefix.push(c[0]);
+  }
+  const pred = predictNext(rt.data.runs, prefix, { excludeRun: state.runId });
+  if (!pred || pred.matches < 2 || pred.share < 0.6 || !pl.cands.includes(pred.next)) return '';
+  return `<div class="hint">📊 歷史 ${pred.matches} 筆相同開頭,${pct(pred.share)} 是第 ${pred.next + 1} 平台</div>`;
+}
+
+function cardHTML(pl, advice) {
+  const p = pl.player;
+  const P = rt.engine.players[p];
+  const t = pl.test;
+  const chosen = rt.chosen[p] && rt.chosen[p].level === pl.testLevel ? rt.chosen[p].col : null;
+  const target = t ? { level: t.level, col: chosen ?? t.col } : null;
+  let big;
+  let cls = 'go';
+  if (pl.done) [big, cls] = ['🎉 已到第 10 層', 'done'];
+  else if (t && pl.ready) big = `試 Lv${t.level} · 第 ${(chosen ?? t.col) + 1} 平台`;
+  else if (t) big = `走到 Lv${pl.testLevel - 1},再試 Lv${t.level} 第 ${(chosen ?? t.col) + 1} 平台`;
+  else if (pl.wait) [big, cls] = [`待命 — 隊友正在測 Lv${pl.testLevel}`, 'wait'];
+  else [big, cls] = ['路徑全知 → 一路走到 Lv10', 'go'];
+
+  const route = pl.route.length
+    ? `<div class="chips"><span class="sub">已知路徑</span>${pl.route.map((s) => `<span class="chip route">Lv${s.level}${CIRC[s.col]}</span>`).join('')}</div>`
+    : '';
+  const cands =
+    pl.testLevel && pl.cands.length > 1
+      ? `<div class="chips"><span class="sub">Lv${pl.testLevel} 可能</span>${pl.cands
+          .map((c) => `<button class="chip ${c === (chosen ?? t?.col) ? 'on' : ''}" data-act="choose" data-p="${p}" data-l="${pl.testLevel}" data-c="${c}" title="改試這個平台">${CIRC[c]}</button>`)
+          .join('')}</div>`
+      : '';
+  const status =
+    state.mode === 'auto' && watched(p) && P.lost ? '<span class="sub">畫面中找不到名牌</span>' : '';
+  const dis = target ? '' : 'disabled';
+  return `<article class="card" ${pc(p)}>
+    <header><span class="name">${pname(p)}${state.me === p ? ' <span class="me-tag">我</span>' : ''}</span>${state.me !== null && state.me !== p ? `<i class="net ${isOnline(p) ? 'on' : ''}" title="${isOnline(p) ? '隊友在線' : '隊友未連線'}"></i>` : ''}<span class="lv">Lv${P.level}${P.col !== null && P.level ? CIRC[P.col] : ''}</span></header>
+    <div class="big ${cls}">${big}</div>
+    ${route}${cands}${hintFor(pl, advice)}${status}
+    <div class="acts manual-main">
+      <button class="btn pass" ${dis} data-act="ok" data-p="${p}" title="按↑後沒被傳走">✔ 成功</button>
+      <button class="btn fail" ${dis} data-act="bad" data-p="${p}" title="按↑後被傳回最底層">✘ 被傳回底層</button>
+      <button class="btn ghost sm" data-act="bottom" data-p="${p}" title="自己跳下去了,不是平台錯">摔回底層</button>
+    </div>
+  </article>`;
+}
+
+// ---- board --------------------------------------------------------------------------
+
+function boardHTML(advice) {
+  const head = `<div class="brow"><div class="lab"></div>${CIRC.map((c) => `<div class="bcell head">${c}</div>`).join('')}</div>`;
+  let rows = '';
+  for (let L = LEVELS; L >= 1; L--) {
+    const a = advice.analysis[L];
+    let anyKnown = false;
+    const cells = [];
+    for (let c = 0; c < COLS; c++) {
+      let dots = '';
+      let known = false;
+      for (let p = 0; p < state.n; p++) {
+        const cands = a.cands[p];
+        let cls = cands.includes(c) ? (cands.length === 1 ? 'ok' : 'cand') : 'x';
+        if (cls === 'ok') known = true;
+        const pl = advice.plans[p];
+        if (pl.test && pl.test.level === L && pl.test.col === c) cls += ' star';
+        const P = rt.engine.players[p];
+        if (P.level === L && P.col === c) cls += ' here';
+        const label = cls.startsWith('ok') ? '確定' : cls.startsWith('x') ? '排除' : '可能';
+        dots += `<button class="dot ${cls}" ${pc(p)} data-act="dot" data-p="${p}" data-l="${L}" data-c="${c}" title="${state.names[p]}:${label}"></button>`;
+      }
+      anyKnown ||= known;
+      cells.push(`<div class="bcell ${known ? 'known' : ''}">${dots}</div>`);
+    }
+    rows += `<div class="brow"><div class="lab ${a.conflict ? 'conflict' : ''}" title="${a.conflict ? '此層紀錄互相矛盾' : ''}">${a.conflict ? '⚠' : ''}Lv${L}</div>${cells.join('')}</div>`;
+  }
+  return head + rows;
+}
+
+// ---- log ----------------------------------------------------------------------------
+
+function logHTML() {
+  if (!state.log.length) return '<li class="empty-note">還沒有紀錄。偵測到或手動登記的結果會出現在這裡。</li>';
+  return state.log
+    .slice()
+    .reverse()
+    .slice(0, 80)
+    .map(
+      (e) => `<li ${pc(e.player)}><span class="t">${clock(e.t)}</span><b>${pname(e.player)}</b> Lv${e.level} ${CIRC[e.col]}
+      <span class="${e.type}">${e.type === 'ok' ? '✔ 成功' : '✘ 失敗'}</span><small>${e.source === 'auto' ? '自動' : '手動'}</small>
+      <button data-act="del" data-id="${e.id}" title="刪除這筆(會重新推論)">✕</button></li>`,
+    )
+    .join('');
+}
+
+// ---- voice --------------------------------------------------------------------------
+
+function speak(advice) {
+  advice.plans.forEach((pl) => {
+    const key = pl.ready && pl.test ? `${pl.test.level}:${pl.test.col}` : '';
+    if (key && key !== rt.spoken?.[pl.player] && state.settings.voice && 'speechSynthesis' in window) {
+      const u = new SpeechSynthesisUtterance(`${state.names[pl.player]},${pl.test.level}層,${pl.test.col + 1}號`);
+      u.lang = 'zh-TW';
+      speechSynthesis.speak(u);
+    }
+    (rt.spoken ??= [])[pl.player] = key;
+  });
+}
+
+// ---- main render --------------------------------------------------------------------
+
+function render() {
+  const advice = computeAdvice();
+  $('#cards').innerHTML = advice.plans.map((pl) => cardHTML(pl, advice)).join('');
+  $('#board').innerHTML = boardHTML(advice);
+  $('#log').innerHTML = logHTML();
+  const warn = $('#warn');
+  warn.hidden = !advice.conflicts.length;
+  if (advice.conflicts.length) warn.textContent = `⚠ Lv${advice.conflicts.join('、Lv')} 的紀錄互相矛盾(可能是偵測誤判),請到事件紀錄刪除錯誤的那一筆。`;
+  speak(advice);
+  renderToasts();
+  const s = summarize(rt.data.runs);
+  $('#statsBrief').textContent = `${s.runs} 輪 · ${s.paths} 條路徑`;
+  if ($('#statsPanel').open) renderStats(s);
+}
+
+// ---- team ---------------------------------------------------------------------------
+
+function renderTeam() {
+  $('#team').innerHTML = Array.from({ length: state.n }, (_, p) => {
+    const t = state.tpls[p];
+    return `<div class="member" ${pc(p)}>
+      <i class="swatch"></i>
+      <input type="text" data-act="name" data-p="${p}" value="${esc(state.names[p])}" maxlength="12" aria-label="玩家 ${p + 1} 名稱">
+      <canvas id="tpl${p}" width="${t ? t.w : 1}" height="${t ? t.h : 1}" ${t ? '' : 'hidden'}></canvas>
+      ${watched(p) ? `<button class="btn sm auto-only" data-act="pickTpl" data-p="${p}">${t ? '重新框選' : '框選名牌'}</button>` : `<span class="muted seatnote" data-seat="${p}">${isOnline(p) ? '隊友在線' : '隊友(未連線)'}</span>`}
+      <div class="st auto-only" id="ps${p}">${watched(p) && !t ? '尚未框選名牌' : ''}</div>
+    </div>`;
+  }).join('');
+  state.tpls.slice(0, state.n).forEach((t, p) => {
+    if (!t) return;
+    const cv = $(`#tpl${p}`);
+    const img = cv.getContext('2d').createImageData(t.w, t.h);
+    for (let i = 0; i < t.raw.length; i++) img.data.set([t.raw[i], t.raw[i], t.raw[i], 255], i * 4);
+    cv.getContext('2d').putImageData(img, 0, 0);
+  });
+}
+
+function setPlayerStatus(p, text, cls = '') {
+  const el = $(`#ps${p}`);
+  if (el && el.textContent !== text) {
+    el.textContent = text;
+    el.className = `st auto-only ${cls}`;
+  }
+}
+
+// ---- settings -----------------------------------------------------------------------
+
+const SECTIONS = [
+  { h: '規則' },
+  { k: 'rule', top: true, label: '答案規則', type: 'select', opts: [['latin', '每人答案不同(隊友互斥)'], ['shared', '全隊共用同一答案']], help: '進去實測一次:同一層你和隊友成功的平台不同 → 互斥' },
+  { k: 'n', top: true, label: '隊伍人數', type: 'number', min: 1, max: 4 },
+  { k: 'maxTesters', top: true, label: '同時試的人數(共用規則)', type: 'number', min: 1, max: 4 },
+  { h: '自動偵測', auto: true },
+  { k: 'procWidth', label: '分析畫面寬度', type: 'select', opts: [[640, '640'], [960, '960'], [1280, '1280'], [1600, '1600']], num: true },
+  { k: 'fps', label: '偵測幀率', type: 'select', opts: [[8, '8'], [12, '12'], [16, '16'], [20, '20']], num: true },
+  { k: 'matchThreshold', label: '名牌比對門檻', type: 'range', min: 0.5, max: 0.95, step: 0.01 },
+  { k: 'tagOffsetY', label: '名牌 → 腳底偏移(px)', type: 'number', min: -20, max: 60 },
+  { k: 'tolY', label: '平台高度容許(%)', type: 'number', min: 10, max: 50 },
+  { k: 'tolX', label: '平台左右容許(%)', type: 'number', min: 30, max: 100 },
+  { k: 'touchMs', label: '站定判定(ms)', type: 'number', min: 80, max: 800, step: 20 },
+  { k: 'teleportMs', label: '瞬間傳送判定(ms)', type: 'number', min: 100, max: 600, step: 10, help: '站在平台上 → 這麼短時間內沒有空中畫面就出現在底層 = 被傳送(失敗)' },
+  { k: 'okMode', label: '成功的推論方式', type: 'select', opts: [['both', '站著沒被傳走 或 往上一層'], ['advance', '只在往上一層時'], ['off', '不推論(成功用手動)']], help: '成功在畫面上沒有直接訊號,所以只能推論' },
+  { k: 'okStandMs', label: '站著多久沒被傳走算成功(ms)', type: 'number', min: 600, max: 6000, step: 100 },
+  { k: 'autoAdoptFall', label: '名牌消失後出現在底層 → 自動記為失敗', type: 'check' },
+  { h: '其他' },
+  { k: 'voice', label: '語音提示(報「幾層 幾號」)', type: 'check' },
+  { k: 'collect', label: '收集數據(統計規律用)', type: 'check' },
+];
+
+function renderSettings() {
+  const val = (f) => (f.top ? state[f.k] : state.settings[f.k]);
+  const html = SECTIONS.map((f) => {
+    if (f.h) return `<h3 class="${f.auto ? 'auto-only' : ''}">${f.h}</h3>`;
+    const cls = f.auto || ['procWidth', 'fps', 'matchThreshold', 'tagOffsetY', 'tolY', 'tolX', 'touchMs', 'teleportMs', 'okMode', 'okStandMs', 'autoAdoptFall'].includes(f.k) ? 'auto-only' : '';
+    const v = val(f);
+    let input;
+    if (f.type === 'select') input = `<select data-act="set" data-k="${f.k}" data-top="${f.top ? 1 : ''}" data-num="${f.num ? 1 : ''}">${f.opts.map(([o, n]) => `<option value="${o}" ${String(o) === String(v) ? 'selected' : ''}>${n}</option>`).join('')}</select>`;
+    else if (f.type === 'check') input = `<input type="checkbox" data-act="set" data-k="${f.k}" ${v ? 'checked' : ''}>`;
+    else input = `<input type="${f.type}" data-act="set" data-k="${f.k}" data-top="${f.top ? 1 : ''}" data-num="1" value="${v}" min="${f.min}" max="${f.max}" step="${f.step ?? 1}">`;
+    return `<label class="${f.type === 'check' ? 'chk' : ''} ${cls}">${f.type === 'check' ? input : ''}<span>${f.label}${f.help ? `<small>${f.help}</small>` : ''}</span>${f.type === 'check' ? '' : input}</label>`;
+  }).join('');
+  const g = state.grid;
+  const gridHtml = g
+    ? `<h3 class="auto-only">格線微調(畫面座標)</h3>${[['x1', '第1層最左 X'], ['y1', '第1層 Y'], ['x2', '第10層最右 X'], ['y2', '第10層 Y'], ['groundY', '起點地面 Y']]
+        .map(([k, n]) => `<label class="auto-only"><span>${n}</span><input type="number" data-act="grid" data-k="${k}" value="${Math.round(g[k])}"></label>`)
+        .join('')}`
+    : '';
+  $('#settingsForm').innerHTML = html + gridHtml;
+}
+
+// ---- stats --------------------------------------------------------------------------
+
+function renderStats(s = summarize(rt.data.runs)) {
+  const flaggedText = s.flagged.map((f) => (f.startsWith('repeat@') ? `不同輪的前 ${f.slice(7)} 層答案重複得比隨機多` : f === 'transitions' ? '相鄰兩層的選擇不獨立' : `第 ${f.slice(5)} 層的平台分佈不均勻`));
+  const verdict =
+    s.verdict === 'insufficient'
+      ? `資料還不夠(目前 ${s.paths} 條路徑,約 12 條以上才下判斷)。每輪結果會自動收集,多玩幾輪。`
+      : s.verdict === 'random'
+        ? '✅ 目前看起來像隨機:各層分佈接近均勻,不同輪之間也沒有異常重複。'
+        : `🔎 有規律跡象:${flaggedText.join(';')}。`;
+  const levelRows = s.levels
+    .map((l) => {
+      const max = Math.max(1, ...l.counts);
+      const cells = l.counts.map((c) => `<td class="bar"><i style="width:${(c / max) * 100}%"></i><span>${c}${l.total ? ` · ${pct(c / l.total)}` : ''}</span></td>`).join('');
+      return `<tr><th>Lv${l.level}</th>${cells}<td>${l.total}</td><td class="${l.p !== null && l.p < 0.01 ? 'sig' : ''}">${l.p === null ? '—' : l.p.toFixed(3)}</td></tr>`;
+    })
+    .join('');
+  const repRows = s.repeats
+    .filter((r) => r.paths >= 2)
+    .map((r) => `<tr><th>前 ${r.prefix} 層</th><td>${r.paths}</td><td>${r.distinct}</td><td>${r.observed} / ${r.expected.toFixed(2)}</td><td class="${r.p !== null && r.p < 0.001 ? 'sig' : ''}">${r.p === null ? '—' : r.p < 0.001 ? '<0.001' : r.p.toFixed(3)}</td></tr>`)
+    .join('');
+  const t = s.transitions;
+  $('#stats').innerHTML = `
+    <div class="stat-tiles"><div class="tile"><b>${s.runs}</b>輪</div><div class="tile"><b>${s.paths}</b>條路徑</div></div>
+    <div class="verdict ${s.verdict}">${verdict}</div>
+    <table class="stat"><thead><tr><th>層</th>${CIRC.map((c) => `<th>${c}</th>`).join('')}<th>n</th><th>均勻性 p</th></tr></thead><tbody>${levelRows}</tbody></table>
+    <p class="muted">互斥規則下每層四人各占一個平台,這張表必然接近均勻;看下面「不同輪重複」才能發現固定組合。</p>
+    <table class="stat"><thead><tr><th>開頭長度</th><th>路徑數</th><th>相異數</th><th>跨輪重複對數(實際 / 隨機期望)</th><th>p</th></tr></thead><tbody>${repRows || '<tr><td colspan="5" class="muted">需要至少兩條路徑</td></tr>'}</tbody></table>
+    <p class="muted">相鄰兩層選同一個平台的比例:${t.sameRate === null ? '—' : pct(t.sameRate)}(隨機約 25%)${t.p === null ? '' : `,獨立性檢定 p=${t.p.toFixed(3)}`}。</p>
+    <div class="row wrap"><button class="btn sm" data-act="exportJson">匯出 JSON</button><button class="btn sm" data-act="exportCsv">匯出 CSV</button><label class="btn sm file">匯入 JSON<input type="file" accept=".json,application/json" hidden data-act="importJson"></label><button class="btn sm danger" data-act="clearData">清除數據</button></div>
+    <p class="muted">資料只存在這個瀏覽器;想合併隊友的資料請互相匯出 / 匯入。</p>`;
+}
+
+// ---- toasts -------------------------------------------------------------------------
+
+function pushToast(t) {
+  const id = ++rt.seq;
+  rt.toasts.push({ id, ...t });
+  renderToasts();
+  if (t.kind === 'info') setTimeout(() => dismissToast(id), t.ms ?? 4000);
+  return id;
+}
+
+function dismissToast(id) {
+  rt.toasts = rt.toasts.filter((x) => x.id !== id);
+  renderToasts();
+}
+
+function renderToasts() {
+  $('#toasts').innerHTML = rt.toasts
+    .map((t) =>
+      t.kind === 'info'
+        ? `<div class="toast info">${esc(t.text)}</div>`
+        : `<div class="toast" ${pc(t.player)}><div><b>${pname(t.player)}</b> 的名牌消失後出現在底層(最後站在 Lv${t.level} ${CIRC[t.col]})— 是這個平台失敗嗎?</div>
+        <div class="chips"><button class="btn sm fail" data-act="fallYes" data-id="${t.id}" data-c="${t.col}">✘ 是,記為 Lv${t.level} ${CIRC[t.col]} 失敗</button>
+        <button class="btn sm" data-act="toastDismiss" data-id="${t.id}">不是(自己摔下去)</button></div>
+        <div class="chips"><span class="sub muted">其實是:</span>${CIRC.map((c, i) => (i === t.col ? '' : `<button class="chip" data-act="fallYes" data-id="${t.id}" data-c="${i}">${c}</button>`)).join('')}</div></div>`,
+    )
+    .join('');
+}
+
+
+// ---- room panel ---------------------------------------------------------------------
+
+function renderRoom(connected = false) {
+  $('#seatSel').value = state.me === null ? 'all' : String(state.me);
+  if (document.activeElement !== $('#roomCode')) $('#roomCode').value = state.room.code;
+  $('#roomVia').value = state.room.via;
+  $('#btnRoom').textContent = connected ? '中斷連線' : '連線';
+  $('#seatSel').disabled = $('#roomCode').disabled = $('#roomVia').disabled = connected;
+  document.querySelectorAll('.seatnote').forEach((el) => {
+    el.textContent = isOnline(Number(el.dataset.seat)) ? '隊友在線' : '隊友(未連線)';
+  });
+  $('#seats').innerHTML = Array.from({ length: state.n }, (_, p) => {
+    const on = state.me === p || (connected && isOnline(p));
+    return `<span class="seat ${on ? 'on' : ''} ${state.me === p ? 'me' : ''}" ${pc(p)}><i></i>${pname(p)}${state.me === p ? '(我)' : on ? '' : ' · 離線'}</span>`;
+  }).join('');
+}
+
+// Wiring: screen capture + calibration + detection loop, manual controls, data export.
+
+
+const view = $('#view');
+const vctx = view.getContext('2d', { willReadFrequently: true });
+const capture = new Capture($('#video'));
+const tracker = new Tracker();
+
+const run = {
+  W: 0,
+  H: 0,
+  detecting: false,
+  frozen: null, // ImageData while calibrating
+  pick: null, // {kind:'grid', pts[]} | {kind:'tpl', p, drag}
+  grid: null, // built from state.grid
+  hints: [], // last top-left of each tag
+  pos: [], // last match per player, for the overlay
+  lastGlobal: [],
+  sig: '',
+  demo: null,
+};
+
+const toast = (text, ms) => pushToast({ kind: 'info', text, ms });
+
+// ---- team connection ----------------------------------------------------------------
+
+const room = { session: null, timer: null, lastStatus: '' };
+
+function sendStatus(force = false) {
+  const st = room.session && myStatus();
+  if (!st) return;
+  const j = JSON.stringify(st);
+  if (!force && j === room.lastStatus) return;
+  room.lastStatus = j;
+  room.session.sendStatus(st);
+}
+
+/** Redraw, and tell teammates if my own position / advice changed. */
+function rerender() {
+  render();
+  sendStatus();
+}
+
+// ---- mode ---------------------------------------------------------------------------
+
+function setMode(mode) {
+  state.mode = mode;
+  document.body.dataset.mode = mode;
+  $('#modeAuto').setAttribute('aria-pressed', String(mode === 'auto'));
+  $('#modeManual').setAttribute('aria-pressed', String(mode === 'manual'));
+  if (mode === 'manual') setDetecting(false);
+  cancelPick();
+  save();
+  rerender();
+}
+
+// ---- capture ------------------------------------------------------------------------
+
+function rebuildGrid() {
+  const g = state.grid;
+  run.grid = g && gridValid(makeGrid(g)) ? makeGrid(g) : null;
+  if (g && run.grid && g.groundY == null) g.groundY = run.grid.groundY;
+}
+
+function ensureSize() {
+  const { videoWidth: vw, videoHeight: vh } = capture.video;
+  const scale = Math.min(1, state.settings.procWidth / vw);
+  const W = Math.round(vw * scale) & ~1;
+  const H = Math.round(vh * scale) & ~1;
+  if (W === run.W && H === run.H) return;
+  run.W = W;
+  run.H = H;
+  view.width = W;
+  view.height = H;
+  $('.stage').style.aspectRatio = `${W} / ${H}`;
+  $('#capInfo').textContent = `已連線 ${vw}×${vh} → 分析 ${W}×${H}`;
+  if (state.grid && state.grid.procW && state.grid.procW !== W) {
+    const k = W / state.grid.procW;
+    for (const key of ['x1', 'y1', 'x2', 'y2', 'groundY']) if (state.grid[key] != null) state.grid[key] *= k;
+    renderSettings();
+  }
+  if (state.grid) state.grid.procW = W;
+  rebuildGrid();
+  let dropped = false;
+  state.tpls.forEach((t, i) => {
+    if (t && t.procW !== W) {
+      state.tpls[i] = null;
+      dropped = true;
+    }
+  });
+  if (dropped) {
+    rebuildTemplates();
+    renderTeam();
+    toast('畫面解析度改變了,請重新框選名牌', 6000);
+  }
+  save();
+  updateSteps();
+}
+
+function updateCaptureUi() {
+  const on = capture.active;
+  $('#btnCapture').hidden = on;
+  $('#btnStop').hidden = !on;
+  $('#viewEmpty').hidden = on;
+  if (!on) $('#capInfo').textContent = '';
+}
+
+async function startScreen() {
+  try {
+    await capture.startScreen();
+  } catch (err) {
+    toast(err && err.name === 'NotAllowedError' ? '沒有選擇要分享的畫面' : `無法擷取畫面:${err && err.message}`, 6000);
+    return;
+  }
+  run.W = 0;
+  updateCaptureUi();
+}
+
+function stopCapture() {
+  capture.stop();
+  setDetecting(false);
+  cancelPick();
+  run.W = 0;
+  updateCaptureUi();
+  vctx.clearRect(0, 0, view.width, view.height);
+}
+
+function setDetecting(on) {
+  if (on) {
+    if (!capture.active) return toast('請先擷取遊戲畫面');
+    if (!run.grid) return toast('請先校準平台格線');
+    if (!rt.built.slice(0, state.n).some((t, p) => t && watched(p))) return toast('請先框選自己的名牌');
+    for (let p = 0; p < state.n; p++) if (watched(p)) rt.engine.players[p].lost = true;
+  }
+  run.detecting = on;
+  $('#btnDetect').textContent = on ? '⏸ 暫停偵測' : '▶ 開始偵測';
+  $('#detInfo').textContent = on ? '偵測中…' : '';
+  updateSteps();
+}
+
+function updateSteps() {
+  $('#stepGrid').classList.toggle('done', !!run.grid);
+  $('#stepTpl').classList.toggle('done', rt.built.slice(0, state.n).every((t, p) => t || !watched(p)));
+  $('#stepRun').classList.toggle('done', run.detecting);
+}
+
+// ---- detection loop -----------------------------------------------------------------
+
+function searchRegion() {
+  const g = run.grid;
+  if (!g) return null;
+  const x = Math.max(0, g.colX[0] - 1.5 * g.dx);
+  const y = Math.max(0, g.rowY[10] - g.dy);
+  return { x, y, w: Math.min(run.W - x, g.colX[3] + 1.5 * g.dx - x), h: Math.min(run.H - y, g.rowY[0] + 2 * g.dy - y) };
+}
+
+// A wrong-platform teleport lands on the bottom floor, far outside the local search window.
+function bottomRegion() {
+  const g = run.grid;
+  const r = searchRegion();
+  const y = Math.max(0, g.rowY[0] - 1.2 * g.dy);
+  return { x: r.x, y, w: r.w, h: Math.min(run.H - y, 3.4 * g.dy) };
+}
+
+function rivalOwns(p, r, tpl) {
+  const cx = r.x + tpl.w / 2;
+  const cy = r.y + tpl.h / 2;
+  return rt.built.some((q, i) => i !== p && i < state.n && q && tracker.score(q, Math.round(cx - q.w / 2), Math.round(cy - q.h / 2)) >= r.score - 0.02);
+}
+
+function cellText(cell) {
+  if (!cell) return '找不到';
+  if (cell.kind === 'plat') return `Lv${cell.level} ${CIRC[cell.col]}`;
+  return cell.kind === 'ground' ? '底層' : '空中';
+}
+
+function detect(now) {
+  const s = state.settings;
+  tracker.setFrame(vctx.getImageData(0, 0, run.W, run.H).data, run.W, run.H);
+  const obs = [];
+  let globalBudget = 1;
+  for (let p = 0; p < state.n; p++) {
+    const tpl = watched(p) ? rt.built[p] : null;
+    obs[p] = null;
+    run.pos[p] = null;
+    if (!tpl) continue;
+    // Name tags look alike, so a match only counts if it clears the threshold AND no teammate's
+    // template fits that spot better. Each search stage is judged on its own: a rejected local
+    // hit (a teammate's tag nearby) must not stop the wider searches.
+    const good = (m) => m && m.score >= s.matchThreshold && !rivalOwns(p, m, tpl);
+    let r = run.hints[p] ? tracker.find(tpl, { hint: run.hints[p], radius: Math.max(110, Math.round(0.8 * run.grid.dx)) }) : null;
+    if (!good(r)) {
+      const rb = tracker.find(tpl, { global: true, region: bottomRegion() });
+      r = good(rb) ? rb : null;
+    }
+    // a whole-screen search is slow: at most one per frame, and not more than every 300 ms per player
+    if (!r && globalBudget > 0 && now - (run.lastGlobal[p] ?? 0) > 300) {
+      globalBudget--;
+      run.lastGlobal[p] = now;
+      const rg = tracker.find(tpl, { global: true, region: searchRegion() });
+      r = good(rg) ? rg : null;
+    }
+    if (r && r.score >= s.matchThreshold) {
+      run.hints[p] = { x: r.x, y: r.y };
+      const cx = r.x + tpl.w / 2;
+      const fy = r.y + tpl.h / 2 - s.tagOffsetY;
+      run.pos[p] = { x: r.x, y: r.y, w: tpl.w, h: tpl.h, cx, fy, score: r.score };
+      obs[p] = classify(run.grid, cx, fy, { tolY: s.tolY / 100, tolX: s.tolX / 100 });
+    }
+  }
+  handleEvents(rt.engine.step(now, obs, new Set(Array.from({ length: state.n }, (_, p) => p).filter((p) => !watched(p)))));
+  for (let p = 0; p < state.n; p++) {
+    const P = rt.engine.players[p];
+    if (!watched(p) || !rt.built[p]) continue;
+    if (run.pos[p]) setPlayerStatus(p, `${cellText(P.cell)} · 相似度 ${Math.round(run.pos[p].score * 100)}%`, 'ok');
+    else setPlayerStatus(p, P.lost ? '畫面中找不到名牌' : '暫時找不到…', P.lost ? 'lost' : '');
+  }
+  const sig = rt.engine.players.map((P) => `${P.level}.${P.col}.${P.lost}.${P.attempt ? P.attempt.level + '' + P.attempt.col : ''}`).join('|');
+  if (sig !== run.sig) {
+    run.sig = sig;
+    rerender();
+  }
+}
+
+function handleEvents(events) {
+  let changed = false;
+  for (const e of events) {
+    if (e.type === 'ok' || e.type === 'bad') {
+      recordResult(e.player, e.level, e.col, e.type === 'ok', { source: 'auto', place: false });
+      changed = true;
+    } else if (e.type === 'unknownFall') {
+      if (state.settings.autoAdoptFall) {
+        recordResult(e.player, e.level, e.col, false, { source: 'auto', place: false });
+        changed = true;
+      } else if (!rt.toasts.some((t) => t.kind === 'fall' && t.player === e.player)) {
+        pushToast({ kind: 'fall', player: e.player, level: e.level, col: e.col });
+      }
+    }
+  }
+  if (changed) rerender();
+}
+
+function tick() {
+  const t0 = performance.now();
+  if (state.mode === 'auto' && capture.active) {
+    ensureSize();
+    if (run.pick) vctx.putImageData(run.frozen, 0, 0);
+    else {
+      vctx.drawImage(capture.video, 0, 0, run.W, run.H);
+      if (run.detecting) detect(t0);
+    }
+    drawOverlay();
+  }
+  setTimeout(tick, Math.max(0, 1000 / state.settings.fps - (performance.now() - t0)));
+}
+
+// ---- overlay ------------------------------------------------------------------------
+
+function drawOverlay() {
+  const c = vctx;
+  const g = run.grid;
+  c.save();
+  c.lineWidth = 1;
+  c.font = `${Math.max(11, Math.round(run.W / 90))}px sans-serif`;
+  if (g) {
+    for (let L = 0; L <= 10; L++) {
+      c.strokeStyle = L === 0 ? 'rgba(255,255,255,.35)' : 'rgba(255,179,71,.4)';
+      c.beginPath();
+      c.moveTo(g.colX[0] - 0.8 * g.dx, g.rowY[L]);
+      c.lineTo(g.colX[3] + 0.8 * g.dx, g.rowY[L]);
+      c.stroke();
+      c.fillStyle = 'rgba(255,179,71,.9)';
+      c.fillText(L === 0 ? '底層' : `Lv${L}`, Math.max(2, g.colX[0] - 0.8 * g.dx - 28), g.rowY[L] - 2);
+      if (L > 0) {
+        c.fillStyle = 'rgba(255,179,71,.65)';
+        for (const x of g.colX) c.fillRect(x - 3, g.rowY[L] - 1, 6, 3);
+      }
+    }
+  }
+  if (run.detecting) {
+    for (let p = 0; p < state.n; p++) {
+      const pos = run.pos[p];
+      if (!pos) continue;
+      c.strokeStyle = COLORS[p];
+      c.lineWidth = 2;
+      c.strokeRect(pos.x, pos.y, pos.w, pos.h);
+      c.beginPath();
+      c.arc(pos.cx, pos.fy, 4, 0, 7);
+      c.fillStyle = COLORS[p];
+      c.fill();
+      c.fillText(`${state.names[p]} ${cellText(rt.engine.players[p].cell)}`, pos.x, pos.y - 4);
+    }
+  }
+  const pk = run.pick;
+  if (pk) {
+    c.fillStyle = 'rgba(0,0,0,.25)';
+    c.fillRect(0, 0, run.W, run.H);
+    if (pk.kind === 'grid') {
+      c.strokeStyle = '#ff6b6b';
+      c.lineWidth = 2;
+      for (const pt of pk.pts) {
+        c.beginPath();
+        c.moveTo(pt.x - 10, pt.y);
+        c.lineTo(pt.x + 10, pt.y);
+        c.moveTo(pt.x, pt.y - 10);
+        c.lineTo(pt.x, pt.y + 10);
+        c.stroke();
+      }
+    } else if (pk.drag) {
+      const { x0, y0, x1, y1 } = pk.drag;
+      c.strokeStyle = COLORS[pk.p];
+      c.lineWidth = 2;
+      c.strokeRect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0));
+    }
+  }
+  c.restore();
+}
+
+// ---- calibration --------------------------------------------------------------------
+
+function banner(text, withDone = false) {
+  const b = $('#pickBanner');
+  b.hidden = !text;
+  b.innerHTML = text ? `<span>${text}</span><span>${withDone ? '<button data-act="pickDone">完成</button> ' : ''}<button data-act="pickCancel">取消</button></span>` : '';
+  view.classList.toggle('picking', !!text);
+}
+
+function freeze() {
+  vctx.drawImage(capture.video, 0, 0, run.W, run.H);
+  run.frozen = vctx.getImageData(0, 0, run.W, run.H);
+}
+
+function startGridPick() {
+  if (!capture.active) return toast('請先擷取遊戲畫面');
+  freeze();
+  run.pick = { kind: 'grid', pts: [] };
+  banner('① 點【第 1 層最左邊平台】的站立面');
+}
+
+function startTplPick(p) {
+  if (!capture.active) return toast('請先擷取遊戲畫面');
+  freeze();
+  run.pick = { kind: 'tpl', p, drag: null };
+  banner(`拖曳框住「${state.names[p]}」腳下的名牌(越貼近文字越準)`);
+}
+
+function cancelPick() {
+  run.pick = null;
+  run.frozen = null;
+  banner('');
+}
+
+function canvasPoint(e) {
+  const r = view.getBoundingClientRect();
+  return { x: ((e.clientX - r.left) * view.width) / r.width, y: ((e.clientY - r.top) * view.height) / r.height };
+}
+
+function onPointerDown(e) {
+  const pk = run.pick;
+  if (!pk) return;
+  const pt = canvasPoint(e);
+  if (pk.kind === 'tpl') {
+    pk.drag = { x0: pt.x, y0: pt.y, x1: pt.x, y1: pt.y };
+    view.setPointerCapture(e.pointerId);
+    return;
+  }
+  pk.pts.push(pt);
+  if (pk.pts.length === 1) banner('② 點【第 10 層最右邊平台】的站立面');
+  else if (pk.pts.length === 2) {
+    const [a, b] = pk.pts;
+    if (!(b.y < a.y - 20 && b.x > a.x + 20)) {
+      pk.pts = [];
+      banner('① 位置不合理(第 10 層要在第 1 層的右上方),重新點【第 1 層最左邊平台】');
+      return;
+    }
+    state.grid = { x1: a.x, y1: a.y, x2: b.x, y2: b.y, groundY: null, procW: run.W };
+    rebuildGrid();
+    banner('③ (選填)點【起點 / 最底層地面】的站立面,不點就用預設', true);
+  } else {
+    state.grid.groundY = pt.y;
+    rebuildGrid();
+    finishGrid();
+  }
+}
+
+function finishGrid() {
+  cancelPick();
+  save();
+  renderSettings();
+  updateSteps();
+  toast('格線已建立,可在「設定 → 格線微調」精修');
+}
+
+function onPointerMove(e) {
+  const pk = run.pick;
+  if (pk && pk.kind === 'tpl' && pk.drag) {
+    const pt = canvasPoint(e);
+    pk.drag.x1 = pt.x;
+    pk.drag.y1 = pt.y;
+  }
+}
+
+function onPointerUp() {
+  const pk = run.pick;
+  if (!pk || pk.kind !== 'tpl' || !pk.drag) return;
+  const { x0, y0, x1, y1 } = pk.drag;
+  const rect = { x: Math.round(Math.min(x0, x1)), y: Math.round(Math.min(y0, y1)), w: Math.round(Math.abs(x1 - x0)), h: Math.round(Math.abs(y1 - y0)) };
+  pk.drag = null;
+  if (rect.w < 16 || rect.h < 8) return toast('框太小了,請再拖曳一次', 3000);
+  const tpl = makeTemplate(toGray(run.frozen.data, run.W * run.H), run.W, run.H, rect);
+  if (!tpl) return toast('無法建立模板,請再試一次', 3000);
+  state.tpls[pk.p] = { raw: tpl.raw, w: tpl.w, h: tpl.h, procW: run.W };
+  run.hints[pk.p] = { x: tpl.x, y: tpl.y };
+  rt.engine.players[pk.p].lost = true;
+  rebuildTemplates();
+  cancelPick();
+  save();
+  renderTeam();
+  updateSteps();
+}
+
+// ---- manual actions -----------------------------------------------------------------
+
+function targetFor(p) {
+  const pl = computeAdvice().plans[p];
+  if (!pl || !pl.test) return null;
+  const ch = rt.chosen[p];
+  return { level: pl.test.level, col: ch && ch.level === pl.test.level ? ch.col : pl.test.col };
+}
+
+function cycleDot(p, level, col) {
+  const cur = state.log.find((e) => e.player === p && e.level === level && e.col === col);
+  if (!cur) recordResult(p, level, col, true, { source: 'manual', place: false });
+  else if (cur.type === 'ok') recordResult(p, level, col, false, { source: 'manual', place: false });
+  else removeEntry(cur.id);
+}
+
+function download(name, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = Object.assign(document.createElement('a'), { href: url, download: name });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function startDemo() {
+  if (run.demo) return stopDemo();
+  if (room.session) return toast('連線中不能示範(會洗掉隊友的紀錄),請先中斷連線', 5000);
+  if (state.log.length && !confirm('示範會清除目前的紀錄(已學到的答案會先存入數據統計),繼續?')) return;
+  resetRun();
+  rt.demo = true; // demo runs are not collected into the statistics
+  setMode('manual');
+  const sim = createSim({ mode: state.rule, n: state.n, seed: Date.now() & 0xffff, maxTesters: state.maxTesters });
+  $('#btnDemo').textContent = '■ 停止示範';
+  run.demo = setInterval(() => {
+    for (const e of sim.step()) {
+      if (e.type === 'ok' || e.type === 'bad') recordResult(e.player, e.level, e.col, e.type === 'ok', { source: 'manual' });
+      else rt.engine.place(e.player, e.level, null);
+    }
+    rerender();
+    if (sim.done) {
+      stopDemo();
+      toast(`示範完成:共 ${sim.rounds} 輪,掉回底層 ${sim.falls} 次。按「新的一輪」開始正式紀錄。`, 8000);
+    }
+  }, 700);
+  rerender();
+}
+
+function stopDemo() {
+  clearInterval(run.demo);
+  run.demo = null;
+  $('#btnDemo').textContent = '▶ 示範';
+}
+
+// ---- events -------------------------------------------------------------------------
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]');
+  if (!el || el.tagName === 'INPUT' || el.tagName === 'SELECT') return;
+  const { act } = el.dataset;
+  const p = Number(el.dataset.p);
+  switch (act) {
+    case 'choose':
+      rt.chosen[p] = { level: Number(el.dataset.l), col: Number(el.dataset.c) };
+      return rerender();
+    case 'ok':
+    case 'bad': {
+      const t = targetFor(p);
+      if (t) recordResult(p, t.level, t.col, act === 'ok');
+      return rerender();
+    }
+    case 'bottom':
+      rt.engine.place(p, 0);
+      save();
+      return rerender();
+    case 'dot':
+      cycleDot(p, Number(el.dataset.l), Number(el.dataset.c));
+      return rerender();
+    case 'del': {
+      const entry = state.log.find((x) => x.id === Number(el.dataset.id));
+      removeEntry(Number(el.dataset.id), !!entry && entry.source === 'manual');
+      return rerender();
+    }
+    case 'pickTpl':
+      return startTplPick(p);
+    case 'pickCancel':
+      return cancelPick();
+    case 'pickDone':
+      return finishGrid();
+    case 'fallYes': {
+      const t = rt.toasts.find((x) => x.id === Number(el.dataset.id));
+      if (t) recordResult(t.player, t.level, Number(el.dataset.c), false, { source: 'auto', place: false });
+      dismissToast(Number(el.dataset.id));
+      return rerender();
+    }
+    case 'toastDismiss':
+      return dismissToast(Number(el.dataset.id));
+    case 'exportJson':
+      return download('maple-rj-data.json', JSON.stringify(rt.data.runs, null, 1), 'application/json');
+    case 'exportCsv':
+      return download('maple-rj-data.csv', `﻿${runsToCSV(rt.data.runs)}`, 'text/csv');
+    case 'clearData':
+      if (confirm('清除所有已收集的數據?(無法復原)')) {
+        clearData();
+        rerender();
+      }
+  }
+});
+
+document.addEventListener('change', async (e) => {
+  const el = e.target;
+  const { act, k } = el.dataset;
+  if (el.id === 'fileVideo' && el.files[0]) {
+    try {
+      await capture.startFile(el.files[0]);
+      run.W = 0;
+      updateCaptureUi();
+    } catch (err) {
+      toast(`無法播放影片:${err.message}`, 5000);
+    }
+    el.value = '';
+  } else if (act === 'name') {
+    state.names[Number(el.dataset.p)] = el.value.trim() || `玩家 ${Number(el.dataset.p) + 1}`;
+    save();
+    rerender();
+  } else if (act === 'set') {
+    const v = el.type === 'checkbox' ? el.checked : el.dataset.num ? Number(el.value) : el.value;
+    if (el.dataset.top) {
+      state[k] = k === 'n' ? Math.max(1, Math.min(4, Math.round(v) || 4)) : v;
+      if (k === 'n') {
+        syncEngine();
+        renderTeam();
+        updateSteps();
+      }
+    } else state.settings[k] = v;
+    syncEngine();
+    if (k === 'procWidth') run.W = 0;
+    save();
+    rerender();
+  } else if (act === 'grid') {
+    state.grid[k] = Number(el.value);
+    rebuildGrid();
+    save();
+  } else if (act === 'importJson' && el.files[0]) {
+    try {
+      const added = importRuns(JSON.parse(await el.files[0].text()));
+      toast(`已匯入 ${added} 輪新資料`);
+    } catch {
+      toast('匯入失敗:不是有效的資料檔', 5000);
+    }
+    el.value = '';
+    rerender();
+  }
+});
+
+$('#modeAuto').addEventListener('click', () => setMode('auto'));
+$('#modeManual').addEventListener('click', () => setMode('manual'));
+$('#btnCapture').addEventListener('click', startScreen);
+$('#btnStop').addEventListener('click', stopCapture);
+$('#btnGrid').addEventListener('click', startGridPick);
+$('#btnGridClear').addEventListener('click', () => {
+  state.grid = null;
+  run.grid = null;
+  save();
+  renderSettings();
+  updateSteps();
+});
+$('#btnDetect').addEventListener('click', () => setDetecting(!run.detecting));
+$('#btnDemo').addEventListener('click', startDemo);
+$('#btnReset').addEventListener('click', () => {
+  if (!confirm(`開始新的一輪?目前的紀錄會清除(已學到的答案會先存入數據統計)。${room.session ? '連線中的隊友也會一起開始新的一輪。' : ''}`)) return;
+  stopDemo();
+  resetRun();
+  rerender();
+});
+$('#btnUndo').addEventListener('click', () => {
+  const last = state.log[state.log.length - 1];
+  if (last) removeEntry(last.id, last.source === 'manual');
+  rerender();
+});
+$('#statsPanel').addEventListener('toggle', () => $('#statsPanel').open && renderStats());
+view.addEventListener('pointerdown', onPointerDown);
+view.addEventListener('pointermove', onPointerMove);
+view.addEventListener('pointerup', onPointerUp);
+document.addEventListener('keydown', (e) => e.key === 'Escape' && cancelPick());
+capture.onEnded = stopCapture;
+
+// ---- room ---------------------------------------------------------------------------
+
+function afterRemote() {
+  render();
+  renderRoom(!!room.session);
+}
+
+async function connectRoom() {
+  if (state.me === null) return toast('連線前請先選「我是」玩家幾號(不能選全部)', 5000);
+  const code = $('#roomCode').value.trim().replace(/[^\w-]/g, '').slice(0, 24);
+  if (code.length < 3) return toast('房間代碼至少 3 個字(英數字)', 4000);
+  state.room = { code, via: $('#roomVia').value };
+  save();
+  $('#roomInfo').textContent = '連線中…';
+  $('#btnRoom').disabled = true;
+  try {
+    const transport = state.room.via === 'tab' ? new BroadcastTransport(code, state.me) : new PeerTransport(code, state.me, await loadPeerJS());
+    room.session = new Session(transport, {
+      slot: state.me,
+      snapshot,
+      hooks: {
+        onSnapshot: (snap) => {
+          if (applySnapshot(snap) === 'adopted') toast('已同步到隊友目前這一輪');
+          afterRemote();
+        },
+        onFact: (e) => mergeRemote({ entries: [e] }) && afterRemote(),
+        onDel: (key, ts) => mergeRemote({ tombs: { [key]: ts } }) && afterRemote(),
+        onReset: (info) => {
+          if (adoptRun(info) === 'adopted') {
+            toast('隊友開始了新的一輪');
+            afterRemote();
+          }
+        },
+        onStatus: (st) => {
+          const r = applyStatus(st);
+          if (r.names) renderTeam();
+          if (r.changed || r.names) afterRemote();
+          else renderRoom(true);
+        },
+        onPeer: (slot, online) => {
+          rt.peers[slot] = online;
+          renderRoom(true);
+        },
+      },
+    });
+    await transport.open();
+  } catch (err) {
+    room.session?.close();
+    room.session = null;
+    $('#roomInfo').textContent = '';
+    $('#btnRoom').disabled = false;
+    return toast(`連線失敗:${err.message}`, 7000);
+  }
+  rt.hooks = {
+    fact: (e) => room.session?.sendFact(e),
+    del: (key, ts) => room.session?.sendDel(key, ts),
+    reset: (id, ts) => room.session?.sendReset(id, ts),
+  };
+  room.timer = setInterval(() => {
+    sendStatus(true);
+    afterRemote();
+  }, 2000);
+  $('#btnRoom').disabled = false;
+  $('#roomInfo').textContent = `已進入房間 ${code}(等隊友連線)`;
+  room.session.hello(true);
+  sendStatus(true);
+  renderRoom(true);
+}
+
+function disconnectRoom() {
+  clearInterval(room.timer);
+  room.session?.close();
+  room.session = null;
+  rt.hooks = {};
+  rt.peers = [];
+  $('#roomInfo').textContent = '';
+  renderRoom(false);
+}
+
+const randomCode = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => 'abcdefghjkmnpqrstuvwxyz23456789'[b % 31]).join('');
+
+$('#btnRoom').addEventListener('click', () => (room.session ? disconnectRoom() : connectRoom()));
+$('#btnRoomNew').addEventListener('click', () => {
+  if (room.session) return;
+  $('#roomCode').value = randomCode();
+  toast('把這組代碼傳給三位隊友,大家填同一組', 5000);
+});
+$('#seatSel').addEventListener('change', (e) => {
+  state.me = e.target.value === 'all' ? null : Number(e.target.value);
+  save();
+  renderTeam();
+  updateSteps();
+  setDetecting(false);
+  rerender();
+  renderRoom(false);
+});
+$('#btnShareCopy').addEventListener('click', async () => {
+  const code = encodeShare(snapshot(), myStatus());
+  $('#shareBox').value = code;
+  try {
+    await navigator.clipboard.writeText(code);
+    toast('分享碼已複製');
+  } catch {
+    $('#shareBox').select();
+    toast('已放在下方文字框,請手動複製', 4000);
+  }
+});
+$('#btnShareMerge').addEventListener('click', () => {
+  const codes = $('#shareBox').value.match(/RJ1\.[A-Za-z0-9+/=]+/g) || [];
+  let ok = 0;
+  for (const c of codes) {
+    const d = decodeShare(c);
+    if (!d) continue;
+    ok++;
+    applySnapshot(d.snap);
+    if (d.status) applyStatus(d.status);
+  }
+  toast(ok ? `已合併 ${ok} 組分享碼` : '找不到有效的分享碼', 4000);
+  renderTeam();
+  rerender();
+});
+
+// ---- start --------------------------------------------------------------------------
+
+load();
+document.body.dataset.mode = state.mode;
+$('#modeAuto').setAttribute('aria-pressed', String(state.mode === 'auto'));
+$('#modeManual').setAttribute('aria-pressed', String(state.mode === 'manual'));
+rebuildGrid();
+renderSettings();
+renderTeam();
+updateSteps();
+updateCaptureUi();
+rerender();
+renderRoom(false);
+tick();
+
+// Hook for automated tests / debugging: feed any MediaStream in place of a real screen share.
+window.__rj = { state, rt, run, tracker, useStream: async (stream) => (await capture.useStream(stream), (run.W = 0), updateCaptureUi()) };
+</script>
+</body>
+</html>

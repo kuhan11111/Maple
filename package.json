@@ -1,0 +1,13 @@
+{
+  "name": "maple-rj-helper",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MapleStory Romeo & Juliet PQ (laboratory corridor) helper: screen detection or manual input",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "e2e": "node test/e2e.mjs",
+    "serve": "python3 -m http.server 8765",
+    "build": "node scripts/build-standalone.mjs"
+  }
+}
