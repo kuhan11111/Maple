@@ -1,5 +1,8 @@
 // Environment-driven configuration. Everything the operator may want to change lives here.
 
+import { join } from 'node:path';
+import { parseRadio } from './music/library.js';
+
 // Sites the bot may search. Edit with ARTALE_SOURCES (comma separated, no https://).
 export const DEFAULT_SOURCES = ['artalemaplestory.com', 'forum.gamer.com.tw', 'dcard.tw', 'ptt.cc', 'uptogo.com.tw'];
 // The subset that holds structured drop / monster / map data.
@@ -30,7 +33,8 @@ export function loadConfig(env = process.env, { needDiscord = true } = {}) {
     discordToken: needDiscord ? need('DISCORD_TOKEN') : env.DISCORD_TOKEN,
     appId: needDiscord ? need('DISCORD_APP_ID') : env.DISCORD_APP_ID,
     guildId: env.DISCORD_GUILD_ID || null, // set while testing: slash commands appear instantly
-    anthropicKey: need('ANTHROPIC_API_KEY'),
+    anthropicKey: env.ANTHROPIC_API_KEY || null,
+    ai: Boolean(env.ANTHROPIC_API_KEY), // /ask and /guide need a paid API key; everything else is free
     model: env.ANTHROPIC_MODEL || 'claude-sonnet-5-5',
     sources,
     dbDomains,
@@ -43,5 +47,11 @@ export function loadConfig(env = process.env, { needDiscord = true } = {}) {
     ratePerDay: num(env.RATE_LIMIT_PER_DAY, 40, 'RATE_LIMIT_PER_DAY'),
     maxConcurrent: Math.max(1, num(env.MAX_CONCURRENT, 3, 'MAX_CONCURRENT')),
     allowedChannels: list(env.ALLOWED_CHANNEL_IDS, []),
+    dataDir: env.DATA_DIR || 'data',
+    dbPath: join(env.DATA_DIR || 'data', 'db.json'),
+    scoresPath: join(env.DATA_DIR || 'data', 'scores.json'),
+    musicEnabled: env.ENABLE_MUSIC !== '0',
+    musicDir: env.MUSIC_DIR || 'music',
+    radio: parseRadio(env.RADIO_STREAMS),
   };
 }

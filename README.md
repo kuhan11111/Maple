@@ -1,6 +1,6 @@
 # 羅密歐與茱麗葉 · 研究室走廊 輔助
 
-> 另外,`discord-bot/` 是 **Artale 問答 Discord 機器人**(查掉落物與攻略),見 [discord-bot/README.md](discord-bot/README.md)。
+> 另外,`discord-bot/` 是 **Artale Discord 機器人**(免費:查掉落、放音樂、小遊戲),見 [discord-bot/README.md](discord-bot/README.md)。
 
 楓之谷(含 MapleStory Worlds 的 Artale)羅密歐與茱麗葉組隊任務「研究室走廊」的過關輔助網站。
 

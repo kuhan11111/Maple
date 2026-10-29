@@ -5,21 +5,30 @@ import { stripPings, splitMessage, sourcesFooter, render, DISCORD_LIMIT } from '
 import { RateLimiter, Semaphore } from '../src/limits.js';
 import { Memory } from '../src/memory.js';
 import { buildSystem, KINDS } from '../src/prompt.js';
-import { COMMANDS, TEXT_OPTION } from '../src/commands.js';
+import { buildCommands, TEXT_OPTION } from '../src/commands.js';
 
 test('config: defaults, overrides and validation', () => {
-  const c = loadConfig({ DISCORD_TOKEN: 't', DISCORD_APP_ID: 'a', ANTHROPIC_API_KEY: 'k' });
+  const base = { DISCORD_TOKEN: 't', DISCORD_APP_ID: 'a' };
+  const c = loadConfig(base);
   assert.deepEqual(c.sources, DEFAULT_SOURCES);
   assert.equal(c.model, 'claude-sonnet-5-5');
   assert.equal(c.maxSearches, 3);
-  const d = loadConfig({ DISCORD_TOKEN: 't', DISCORD_APP_ID: 'a', ANTHROPIC_API_KEY: 'k', ARTALE_SOURCES: 'https://Example.com/, foo.bar/wiki', MAX_SEARCHES: '5', ALLOWED_CHANNEL_IDS: '1, 2' });
+  assert.equal(c.ai, false, 'no API key = AI features off, everything else works');
+  assert.equal(c.musicEnabled, true);
+  assert.deepEqual(c.radio, []);
+  assert.match(c.dbPath, /data[\\/]db\.json$/);
+  assert.equal(loadConfig({ ...base, ANTHROPIC_API_KEY: 'k' }).ai, true);
+  assert.equal(loadConfig({ ...base, ENABLE_MUSIC: '0' }).musicEnabled, false);
+  assert.equal(loadConfig({ ...base, DATA_DIR: '/x' }).dbPath, '/x/db.json');
+  const d = loadConfig({ ...base, ARTALE_SOURCES: 'https://Example.com/, foo.bar/wiki', MAX_SEARCHES: '5', ALLOWED_CHANNEL_IDS: '1, 2', RADIO_STREAMS: '電台=https://a.example/s' });
   assert.deepEqual(d.sources, ['example.com', 'foo.bar/wiki']);
   assert.equal(d.maxSearches, 5);
   assert.deepEqual(d.allowedChannels, ['1', '2']);
-  assert.throws(() => loadConfig({ DISCORD_APP_ID: 'a', ANTHROPIC_API_KEY: 'k' }), /DISCORD_TOKEN/);
-  assert.throws(() => loadConfig({ DISCORD_TOKEN: 't', DISCORD_APP_ID: 'a' }), /ANTHROPIC_API_KEY/);
+  assert.equal(d.radio[0].title, '電台');
+  assert.throws(() => loadConfig({ DISCORD_APP_ID: 'a' }), /DISCORD_TOKEN/);
   assert.throws(() => normalizeDomain('not a domain'), /網域格式/);
-  assert.throws(() => loadConfig({ DISCORD_TOKEN: 't', DISCORD_APP_ID: 'a', ANTHROPIC_API_KEY: 'k', MAX_SEARCHES: 'lots' }), /MAX_SEARCHES/);
+  assert.throws(() => loadConfig({ ...base, MAX_SEARCHES: 'lots' }), /MAX_SEARCHES/);
+  assert.throws(() => loadConfig({ ...base, RADIO_STREAMS: 'broken' }), /RADIO_STREAMS/);
 });
 
 test('format: mentions are defanged', () => {
@@ -115,13 +124,29 @@ test('prompt: system mentions sources and date; kinds shape the question', () =>
   assert.equal(KINDS.ask('hello'), 'hello');
 });
 
-test('slash commands are valid for Discord and map to a text option', () => {
-  for (const c of COMMANDS) {
-    assert.match(c.name, /^[a-z0-9_-]{1,32}$/);
-    assert.ok(c.description.length >= 1 && c.description.length <= 100, c.name);
-    for (const o of c.options ?? []) assert.ok(o.description.length <= 100 && /^[a-z0-9_-]+$/.test(o.name));
+test('slash commands are valid for Discord and depend on the configuration', () => {
+  const names = (cfg) => buildCommands(cfg).map((c) => c.name);
+  assert.deepEqual(names({ ai: false, musicEnabled: false }).filter((n) => ['ask', 'sources', 'music'].includes(n)), []);
+  assert.ok(names({ ai: false, musicEnabled: true }).includes('music'));
+  assert.ok(['ask', 'sources'].every((n) => names({ ai: true }).includes(n)));
+  assert.ok(['help', 'drop', 'map', 'guide', 'roll', 'pick', 'scroll', 'rps', 'guess', 'quiz', 'rank'].every((n) => names({}).includes(n)));
+  const all = buildCommands({ ai: true, musicEnabled: true });
+  assert.equal(new Set(all.map((c) => c.name)).size, all.length, 'no duplicate names');
+  assert.ok(all.length <= 100);
+  const check = (o) => {
+    assert.match(o.name, /^[\p{Ll}\p{N}_-]{1,32}$/u, o.name);
+    assert.ok(o.description.length >= 1 && o.description.length <= 100, `${o.name}: description length`);
+    for (const ch of o.choices ?? []) assert.ok(String(ch.name).length <= 100);
+    (o.options ?? []).forEach(check);
+  };
+  all.forEach(check);
+  // required options come before optional ones (Discord rejects the reverse)
+  for (const c of all) {
+    const opts = c.options ?? [];
+    const firstOptional = opts.findIndex((o) => o.required === false);
+    if (firstOptional >= 0) assert.ok(opts.slice(firstOptional).every((o) => o.required === false), `${c.name}: required option after optional`);
   }
   for (const [cmd, opt] of Object.entries(TEXT_OPTION)) {
-    assert.ok(COMMANDS.find((c) => c.name === cmd).options.some((o) => o.name === opt), `${cmd}.${opt}`);
+    assert.ok(all.find((c) => c.name === cmd).options.some((o) => o.name === opt), `${cmd}.${opt}`);
   }
 });

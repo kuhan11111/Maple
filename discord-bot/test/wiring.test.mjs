@@ -3,82 +3,51 @@ import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { Events, MessageFlags } from 'discord.js';
 import { attach } from '../src/wiring.js';
-import { baseConfig } from './helpers.mjs';
+import { fakeInteraction } from './helpers-discord.mjs';
 
-function setup(handlers) {
+function setup(routes = {}) {
   const discord = new EventEmitter();
-  discord.once = (ev, fn) => EventEmitter.prototype.once.call(discord, ev, fn);
   discord.user = { id: '999', tag: 'bot#1' };
-  attach(discord, { handlers, config: baseConfig });
-  return discord;
+  const r = { commands: new Map(), autocomplete: new Map(), components: [], mention: async () => ({ parts: ['x'] }), ...routes };
+  attach(discord, { routes: r });
+  return { discord, handler: (ev) => discord.listeners(ev)[0] };
 }
 
-function interaction(name, value) {
-  const calls = [];
-  const rec = (n) => async (x) => void calls.push([n, x]);
-  return {
-    calls,
-    commandName: name,
-    user: { id: 'u1' },
-    channelId: 'c1',
-    deferred: false,
-    replied: false,
-    isChatInputCommand: () => true,
-    options: { getString: () => value },
-    reply: rec('reply'),
-    deferReply: async function (x) {
-      this.deferred = true;
-      calls.push(['defer', x]);
-    },
-    editReply: rec('edit'),
-    followUp: rec('follow'),
+const as = (i, kind) => Object.assign(i, { isChatInputCommand: () => kind === 'command', isAutocomplete: () => kind === 'auto', isButton: () => kind === 'button' });
+
+test('commands, autocomplete and buttons are dispatched to their routes', async () => {
+  const seen = [];
+  const { handler } = setup({
+    commands: new Map([['drop', async (i) => seen.push(['cmd', i.commandName])]]),
+    autocomplete: new Map([['drop', async () => seen.push(['auto'])]]),
+    components: [{ prefix: 'rps:', handler: async (i) => seen.push(['btn', i.customId]) }, { prefix: 'quiz:', handler: async () => seen.push(['quiz']) }],
+  });
+  const h = handler(Events.InteractionCreate);
+  await h(as(fakeInteraction({ name: 'drop' }), 'command'));
+  await h(as(fakeInteraction({ name: 'drop' }), 'auto'));
+  await h(as(fakeInteraction({ customId: 'rps:a:rock' }), 'button'));
+  await h(as(fakeInteraction({ name: 'unknown' }), 'command'));
+  await h(as(fakeInteraction({ customId: 'zzz:1' }), 'button'));
+  assert.deepEqual(seen, [['cmd', 'drop'], ['auto'], ['btn', 'rps:a:rock']]);
+});
+
+test('an exception never leaves the user hanging', async () => {
+  const boom = async () => {
+    throw new Error('boom');
   };
-}
-
-const ok = (parts) => ({ admit: () => ({ ok: true }), answer: async () => ({ ok: true, parts }) });
-
-test('slash command: gate first, then defer, then edit and follow up for extra parts', async () => {
-  const d = setup(ok(['one', 'two', 'three']));
-  const i = interaction('drop', '肥肥頭');
-  await d.listeners(Events.InteractionCreate)[0](i);
-  assert.deepEqual(i.calls.map((c) => c[0]), ['defer', 'edit', 'follow', 'follow']);
-  assert.equal(i.calls[1][1].content, 'one');
-  assert.equal(i.calls[3][1].content, 'three');
-});
-
-test('slash command: rejected requests get a private reply and never defer', async () => {
-  const d = setup({ admit: () => ({ ok: false, message: '查太快了' }), answer: async () => assert.fail('must not run') });
-  const i = interaction('ask', 'x');
-  await d.listeners(Events.InteractionCreate)[0](i);
-  assert.deepEqual(i.calls.map((c) => c[0]), ['reply']);
-  assert.equal(i.calls[0][1].flags, MessageFlags.Ephemeral);
-});
-
-test('slash command: a failed lookup is shown as the reply text', async () => {
-  const d = setup({ admit: () => ({ ok: true }), answer: async () => ({ ok: false, message: '查詢逾時了' }) });
-  const i = interaction('guide', 'x');
-  await d.listeners(Events.InteractionCreate)[0](i);
-  assert.deepEqual(i.calls.map((c) => c[0]), ['defer', 'edit']);
-  assert.equal(i.calls[1][1].content, '查詢逾時了');
-});
-
-test('slash command: /sources lists sites privately; unknown commands are ignored', async () => {
-  const d = setup(ok(['x']));
-  const s = interaction('sources');
-  await d.listeners(Events.InteractionCreate)[0](s);
-  assert.match(s.calls[0][1].content, /artalemaplestory\.com\(資料庫\)/);
-  assert.equal(s.calls[0][1].flags, MessageFlags.Ephemeral);
-  const u = interaction('whatever', 'x');
-  await d.listeners(Events.InteractionCreate)[0](u);
-  assert.deepEqual(u.calls, []);
-});
-
-test('slash command: an exception inside never leaves the user hanging', async () => {
-  const d = setup({ admit: () => ({ ok: true }), answer: async () => { throw new Error('boom'); } });
-  const i = interaction('ask', 'x');
-  await d.listeners(Events.InteractionCreate)[0](i);
-  assert.deepEqual(i.calls.map((c) => c[0]), ['defer', 'edit']);
-  assert.match(i.calls[1][1].content, /出了點問題/);
+  const { handler } = setup({ commands: new Map([['x', boom]]), autocomplete: new Map([['x', boom]]) });
+  const h = handler(Events.InteractionCreate);
+  const fresh = as(fakeInteraction({ name: 'x' }), 'command');
+  await h(fresh);
+  assert.equal(fresh.calls[0][0], 'reply');
+  assert.equal(fresh.calls[0][1].flags, MessageFlags.Ephemeral);
+  const deferred = as(fakeInteraction({ name: 'x' }), 'command');
+  deferred.deferred = true;
+  await h(deferred);
+  assert.equal(deferred.calls[0][0], 'edit');
+  const auto = as(fakeInteraction({ name: 'x' }), 'auto');
+  await h(auto);
+  assert.deepEqual(auto.calls, [], 'autocomplete failures are silent');
 });
 
 function message(content, { bot = false, mentions = true } = {}) {
@@ -96,24 +65,32 @@ function message(content, { bot = false, mentions = true } = {}) {
 
 test('mention: strips the mention, replies without pinging, sends extra parts to the channel', async () => {
   let seen;
-  const d = setup({ admit: () => ({ ok: true }), answer: async (r) => ((seen = r), { ok: true, parts: ['a', 'b'] }) });
+  const { handler } = setup({ mention: async (r) => ((seen = r), { parts: ['a', 'b'] }) });
   const m = message('<@999> 肥肥頭哪裡打?');
-  await d.listeners(Events.MessageCreate)[0](m);
-  assert.equal(seen.text, '肥肥頭哪裡打?');
+  await handler(Events.MessageCreate)(m);
+  assert.deepEqual(seen, { text: '肥肥頭哪裡打?', userId: 'u1', channelId: 'c1' });
   assert.equal(m.calls[0][0], 'reply');
   assert.deepEqual(m.calls[0][1].allowedMentions, { repliedUser: false });
   assert.deepEqual(m.calls[1][1].allowedMentions, { parse: [] });
 });
 
-test('mention: ignores bots and messages that do not mention the bot; gate failures reply politely', async () => {
-  const d = setup({ admit: () => ({ ok: false, message: '今天用完了' }), answer: async () => assert.fail('no') });
-  const handler = d.listeners(Events.MessageCreate)[0];
+test('mention: ignores bots and messages that do not mention the bot', async () => {
+  const { handler } = setup({ mention: async () => assert.fail('must not run') });
+  const h = handler(Events.MessageCreate);
   const bot = message('<@999> hi', { bot: true });
   const other = message('hello', { mentions: false });
-  await handler(bot);
-  await handler(other);
+  await h(bot);
+  await h(other);
   assert.deepEqual([bot.calls, other.calls], [[], []]);
+});
+
+test('mention: a failing route answers politely instead of crashing', async () => {
+  const { handler } = setup({
+    mention: async () => {
+      throw new Error('boom');
+    },
+  });
   const m = message('<@999> hi');
-  await handler(m);
-  assert.equal(m.calls[0][1].content, '今天用完了');
+  await handler(Events.MessageCreate)(m);
+  assert.match(m.calls[0][1].content, /出了點問題/);
 });

@@ -1,2 +1,7 @@
 node_modules/
 .env
+# 你自己匯入的資料、分數、音樂不進版本控制
+data/*.json
+data/raw/
+music/*
+!music/.gitkeep
