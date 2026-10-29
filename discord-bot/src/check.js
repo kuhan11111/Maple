@@ -10,7 +10,7 @@ import { friendly } from './handlers.js';
 let config;
 try {
   config = loadConfig(process.env, { needDiscord: false });
-  if (!config.ai) throw new Error('沒有設定 ANTHROPIC_API_KEY。這個檢查只用來測試選用的 AI 功能;免費的查表 / 遊戲 / 音樂功能不需要它。');
+  if (!config.ai) throw new Error('沒有設定 ANTHROPIC_API_KEY。這個檢查只用來測試選用的 AI 功能;免費的查表 / 情報 / 遊戲功能不需要它。');
 } catch (err) {
   console.error(`設定錯誤:${err.message}`);
   process.exit(1);

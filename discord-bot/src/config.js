@@ -1,7 +1,7 @@
 // Environment-driven configuration. Everything the operator may want to change lives here.
 
 import { join } from 'node:path';
-import { parseRadio } from './music/library.js';
+import { delayUntil } from './news/schedule.js';
 
 // Sites the bot may search. Edit with ARTALE_SOURCES (comma separated, no https://).
 export const DEFAULT_SOURCES = ['artalemaplestory.com', 'forum.gamer.com.tw', 'dcard.tw', 'ptt.cc', 'uptogo.com.tw'];
@@ -29,12 +29,14 @@ export function loadConfig(env = process.env, { needDiscord = true } = {}) {
   };
   const sources = list(env.ARTALE_SOURCES, DEFAULT_SOURCES).map(normalizeDomain);
   const dbDomains = list(env.ARTALE_DB_DOMAINS, DEFAULT_DB_DOMAINS).map(normalizeDomain);
+  const newsDailyAt = env.NEWS_DAILY_AT || '06:00';
+  delayUntil(newsDailyAt, 0, 0); // throws a readable error for a bad time like 25:00
   return {
     discordToken: needDiscord ? need('DISCORD_TOKEN') : env.DISCORD_TOKEN,
     appId: needDiscord ? need('DISCORD_APP_ID') : env.DISCORD_APP_ID,
     guildId: env.DISCORD_GUILD_ID || null, // set while testing: slash commands appear instantly
     anthropicKey: env.ANTHROPIC_API_KEY || null,
-    ai: Boolean(env.ANTHROPIC_API_KEY), // /ask and /guide need a paid API key; everything else is free
+    ai: Boolean(env.ANTHROPIC_API_KEY), // /問答 and AI-written /攻略 need a paid API key; everything else is free
     model: env.ANTHROPIC_MODEL || 'claude-sonnet-5-5',
     sources,
     dbDomains,
@@ -49,9 +51,14 @@ export function loadConfig(env = process.env, { needDiscord = true } = {}) {
     allowedChannels: list(env.ALLOWED_CHANNEL_IDS, []),
     dataDir: env.DATA_DIR || 'data',
     dbPath: join(env.DATA_DIR || 'data', 'db.json'),
-    scoresPath: join(env.DATA_DIR || 'data', 'scores.json'),
-    musicEnabled: env.ENABLE_MUSIC !== '0',
-    musicDir: env.MUSIC_DIR || 'music',
-    radio: parseRadio(env.RADIO_STREAMS),
+    reportsPath: join(env.DATA_DIR || 'data', 'reports.json'),
+    playersPath: join(env.DATA_DIR || 'data', 'players.json'),
+    newsPath: join(env.DATA_DIR || 'data', 'news.json'),
+    sourcesPath: join(env.DATA_DIR || 'data', 'news-sources.json'),
+    tzOffsetHours: num(env.TZ_OFFSET_HOURS, 8, 'TZ_OFFSET_HOURS'), // Taiwan time; used for "today" and the daily schedule
+    newsDailyAt,
+    newsChannelId: env.NEWS_CHANNEL_ID || null, // post the daily digest here
+    newsMinRefreshMs: num(env.NEWS_MIN_REFRESH_MINUTES, 30, 'NEWS_MIN_REFRESH_MINUTES') * 60_000,
+    channelIntel: env.ENABLE_CHANNEL_INTEL === '1', // read registered channels as news; needs the Message Content intent
   };
 }

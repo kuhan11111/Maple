@@ -1,5 +1,6 @@
 // Discord-facing mini game commands. Each takes an interaction `i` and a context
-// {rng, scores, db, guess, quizzes, setTimeout}. Buttons carry their state in custom_id.
+// {rng, players, db, guess, quizzes, setTimeout}. Buttons carry their state in custom_id.
+// Winning pays mesos into the same character the RPG commands use.
 
 import { parseDice, rollDice, scrollRun, MOVES, judge, makeQuiz } from './logic.js';
 
@@ -8,8 +9,10 @@ const row = (buttons) => [{ type: 1, components: buttons }];
 const button = (custom_id, label, style = 2) => ({ type: 2, style, custom_id, label });
 const mention = (id) => `<@${id}>`;
 
+export const REWARD = { rps: 200, guessPerPoint: 300, quiz: 500 };
+
 export async function roll(i, ctx) {
-  const expr = i.options.getString('dice') ?? '1d100';
+  const expr = i.options.getString('骰子') ?? '1d100';
   const d = parseDice(expr);
   if (!d) return i.reply({ content: '骰子格式不對,例如 `2d6+3`、`d20`(最多 20 顆、1000 面)。', flags: EPHEMERAL });
   const { rolls, total } = rollDice(d, ctx.rng);
@@ -17,42 +20,42 @@ export async function roll(i, ctx) {
 }
 
 export async function pick(i, ctx) {
-  const options = (i.options.getString('options') ?? '').split(/[,，、|\n]/).map((s) => s.trim()).filter(Boolean);
+  const options = (i.options.getString('選項') ?? '').split(/[,，、|\n]/).map((s) => s.trim()).filter(Boolean);
   if (options.length < 2) return i.reply({ content: '至少要兩個選項,用逗號隔開,例如:`吃麵, 吃飯, 吃漢堡`', flags: EPHEMERAL });
   if (options.length > 25) return i.reply({ content: '選項太多了(最多 25 個)。', flags: EPHEMERAL });
   return i.reply({ content: `🎯 抽到:**${options[Math.floor(ctx.rng() * options.length)]}**` });
 }
 
 export async function scroll(i, ctx) {
-  const rate = i.options.getInteger('rate') ?? 60;
-  const slots = i.options.getInteger('slots') ?? 7;
+  const rate = i.options.getInteger('成功率') ?? 60;
+  const slots = i.options.getInteger('格數') ?? 7;
   const { results, success } = scrollRun(rate, Math.min(15, Math.max(1, slots)), ctx.rng);
   const mood = success === results.length ? '全中!神!' : success === 0 ? '一張都沒中…下次會更好' : success * 2 >= results.length ? '手氣不錯' : '再接再厲';
   return i.reply({ content: `🧻 **${rate}% 卷軸** × ${results.length} 格\n${results.map((r) => (r ? '✅' : '❌')).join('')}\n成功 **${success}/${results.length}** — ${mood}` });
 }
 
-export async function rps(i, ctx) {
+export async function rps(i) {
   const id = i.user.id;
   return i.reply({ content: `${mention(id)} 來猜拳,出拳吧!`, components: row(Object.entries(MOVES).map(([k, m]) => button(`rps:${id}:${k}`, `${m.icon} ${m.label}`, 1))) });
 }
 
 export async function rpsButton(i, ctx) {
   const [, owner, move] = i.customId.split(':');
-  if (i.user.id !== owner || !MOVES[move]) return i.reply({ content: '這是別人的對局,用 `/rps` 開自己的一局。', flags: EPHEMERAL });
+  if (i.user.id !== owner || !MOVES[move]) return i.reply({ content: '這是別人的對局,用 `/猜拳` 開自己的一局。', flags: EPHEMERAL });
   const bot = Object.keys(MOVES)[Math.floor(ctx.rng() * 3)];
   const r = judge(move, bot);
-  if (r === 1) ctx.scores.add(i.guildId, owner, 'rps', 1);
-  return i.update({ content: `${mention(owner)} ${MOVES[move].icon} vs 我 ${MOVES[bot].icon} — ${r === 1 ? '🎉 你贏了!(+1)' : r === 0 ? '🤝 平手' : '😈 我贏了'}`, components: [] });
+  if (r === 1) ctx.players.reward(i.guildId, owner, 'rps', REWARD.rps);
+  return i.update({ content: `${mention(owner)} ${MOVES[move].icon} vs 我 ${MOVES[bot].icon} — ${r === 1 ? `🎉 你贏了!(+${REWARD.rps} 楓幣)` : r === 0 ? '🤝 平手' : '😈 我贏了'}`, components: [] });
 }
 
 export async function guess(i, ctx) {
-  const { guess: games, scores } = ctx;
-  const n = i.options.getInteger('number');
+  const games = ctx.guess;
+  const n = i.options.getInteger('數字');
   const ch = i.channelId;
-  let g = games.status(ch);
+  const g = games.status(ch);
   if (!g) {
     games.start(ch);
-    if (n === null) return i.reply({ content: '🔢 我想好了一個 1~100 的數字,用 `/guess 數字` 來猜!' });
+    if (n === null) return i.reply({ content: '🔢 我想好了一個 1~100 的數字,用 `/猜數字 數字` 來猜!' });
   } else if (n === null) {
     return i.reply({ content: `🔢 這個頻道有一局進行中:已猜 ${g.tries} 次,答案在 **${g.lo}~${g.hi}** 之間。`, flags: EPHEMERAL });
   }
@@ -61,8 +64,9 @@ export async function guess(i, ctx) {
   if (r.result === 'invalid') return i.reply({ content: '請猜 1~100 的整數。', flags: EPHEMERAL });
   if (r.result === 'out') return i.reply({ content: `${n} 已經不可能了,答案在 **${r.lo}~${r.hi}** 之間。`, flags: EPHEMERAL });
   if (r.result === 'win') {
-    scores.add(i.guildId, i.user.id, 'guess', r.points);
-    return i.reply({ content: `🎉 ${who} 猜中了!答案是 **${r.secret}**,全場共猜 ${r.tries} 次(+${r.points})。再來一局:\`/guess\`` });
+    const mesos = r.points * REWARD.guessPerPoint;
+    ctx.players.reward(i.guildId, i.user.id, 'guess', mesos);
+    return i.reply({ content: `🎉 ${who} 猜中了!答案是 **${r.secret}**,全場共猜 ${r.tries} 次(+${mesos} 楓幣)。再來一局:\`/猜數字\`` });
   }
   return i.reply({ content: `${who} 猜 ${n}:${r.result === 'low' ? '📈 太小了' : '📉 太大了'}(現在是 **${r.lo}~${r.hi}**,第 ${r.tries} 次)` });
 }
@@ -99,21 +103,12 @@ export async function quizButton(i, ctx) {
   if (k !== state.q.answerIndex) return i.reply({ content: `❌ 不是 ${state.q.options[k]}`, flags: EPHEMERAL });
   state.closed = true;
   ctx.quizzes.delete(Number(idStr));
-  ctx.scores.add(i.guildId, i.user.id, 'quiz', 1);
-  return i.update({ content: `${state.text}\n🎉 ${mention(i.user.id)} 答對了!答案是 **${state.q.answer}**(+1)`, components: [] });
-}
-
-export async function rank(i, ctx) {
-  const top = ctx.scores.top(i.guildId, 10);
-  if (!top.length) return i.reply({ content: '還沒有人拿過分,玩玩 `/rps`、`/guess`、`/quiz` 吧!' });
-  const names = { rps: '猜拳', guess: '猜數字', quiz: '猜怪物' };
-  const lines = top.map((u, k) => `${['🥇', '🥈', '🥉'][k] ?? `${k + 1}.`} ${mention(u.userId)} — **${u.points}** 分(${Object.entries(u.wins).map(([g, n]) => `${names[g] ?? g} ${n}`).join(' / ')})`);
-  return i.reply({ content: `🏆 **排行榜**\n${lines.join('\n')}` });
+  ctx.players.reward(i.guildId, i.user.id, 'quiz', REWARD.quiz);
+  return i.update({ content: `${state.text}\n🎉 ${mention(i.user.id)} 答對了!答案是 **${state.q.answer}**(+${REWARD.quiz} 楓幣)`, components: [] });
 }
 
 export const BUTTONS = [
   { prefix: 'rps:', handler: rpsButton },
   { prefix: 'quiz:', handler: quizButton },
 ];
-export const COMMAND_HANDLERS = { roll, pick, scroll, rps, guess, quiz, rank };
-
+export const COMMAND_HANDLERS = { 擲骰: roll, 抽籤: pick, 衝捲: scroll, 猜拳: rps, 猜數字: guess, 猜怪物: quiz };

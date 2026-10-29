@@ -2,9 +2,12 @@
 
 export const DISCORD_LIMIT = 2000;
 
-/** Defang @everyone / @here and user / role mentions so an answer can never ping anyone. */
+/**
+ * Defang @everyone / @here and user / role mentions (a zero-width space breaks them) so a message can
+ * never ping anyone. Channel links <#id> are harmless and stay clickable.
+ */
 export function stripPings(text) {
-  return text.replace(/@(everyone|here)/gi, '@​$1').replace(/<(@[!&]?|#)(\d+)>/g, '<$1​$2>');
+  return text.replace(/@(everyone|here)/gi, '@\u200b$1').replace(/<(@[!&]?)(\d+)>/g, '<$1\u200b$2>');
 }
 
 const safeUrl = (u) => {

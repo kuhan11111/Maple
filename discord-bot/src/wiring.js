@@ -30,6 +30,13 @@ export function attach(discord, { routes, log = () => {} }) {
   // the privileged Message Content intent.
   discord.on(Events.MessageCreate, async (m) => {
     const me = discord.user;
+    if (me && routes.intel) {
+      try {
+        routes.intel(m, me.id); // registered intel channels become news, whoever posted
+      } catch (err) {
+        log('intel_error', { message: err?.message });
+      }
+    }
     if (m.author.bot || !me || !m.mentions.has(me, { ignoreEveryone: true, ignoreRoles: true, ignoreRepliedUser: true })) return;
     const quiet = { repliedUser: false };
     await m.channel.sendTyping().catch(() => {});

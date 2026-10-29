@@ -5,36 +5,39 @@ import { stripPings, splitMessage, sourcesFooter, render, DISCORD_LIMIT } from '
 import { RateLimiter, Semaphore } from '../src/limits.js';
 import { Memory } from '../src/memory.js';
 import { buildSystem, KINDS } from '../src/prompt.js';
-import { buildCommands, TEXT_OPTION } from '../src/commands.js';
+import { buildCommands, AI_OPTION } from '../src/commands.js';
 
 test('config: defaults, overrides and validation', () => {
   const base = { DISCORD_TOKEN: 't', DISCORD_APP_ID: 'a' };
   const c = loadConfig(base);
   assert.deepEqual(c.sources, DEFAULT_SOURCES);
   assert.equal(c.model, 'claude-sonnet-5-5');
-  assert.equal(c.maxSearches, 3);
   assert.equal(c.ai, false, 'no API key = AI features off, everything else works');
-  assert.equal(c.musicEnabled, true);
-  assert.deepEqual(c.radio, []);
   assert.match(c.dbPath, /data[\\/]db\.json$/);
+  assert.equal(c.tzOffsetHours, 8);
+  assert.equal(c.newsDailyAt, '06:00');
+  assert.equal(c.newsChannelId, null);
+  assert.equal(c.newsMinRefreshMs, 30 * 60_000);
+  assert.equal(c.channelIntel, false);
   assert.equal(loadConfig({ ...base, ANTHROPIC_API_KEY: 'k' }).ai, true);
-  assert.equal(loadConfig({ ...base, ENABLE_MUSIC: '0' }).musicEnabled, false);
   assert.equal(loadConfig({ ...base, DATA_DIR: '/x' }).dbPath, '/x/db.json');
-  const d = loadConfig({ ...base, ARTALE_SOURCES: 'https://Example.com/, foo.bar/wiki', MAX_SEARCHES: '5', ALLOWED_CHANNEL_IDS: '1, 2', RADIO_STREAMS: '電台=https://a.example/s' });
+  assert.equal(loadConfig({ ...base, DATA_DIR: '/x' }).playersPath, '/x/players.json');
+  assert.equal(loadConfig({ ...base, ENABLE_CHANNEL_INTEL: '1', NEWS_DAILY_AT: '7:30', NEWS_CHANNEL_ID: '5' }).channelIntel, true);
+  const d = loadConfig({ ...base, ARTALE_SOURCES: 'https://Example.com/, foo.bar/wiki', MAX_SEARCHES: '5', ALLOWED_CHANNEL_IDS: '1, 2' });
   assert.deepEqual(d.sources, ['example.com', 'foo.bar/wiki']);
   assert.equal(d.maxSearches, 5);
   assert.deepEqual(d.allowedChannels, ['1', '2']);
-  assert.equal(d.radio[0].title, '電台');
   assert.throws(() => loadConfig({ DISCORD_APP_ID: 'a' }), /DISCORD_TOKEN/);
   assert.throws(() => normalizeDomain('not a domain'), /網域格式/);
   assert.throws(() => loadConfig({ ...base, MAX_SEARCHES: 'lots' }), /MAX_SEARCHES/);
-  assert.throws(() => loadConfig({ ...base, RADIO_STREAMS: 'broken' }), /RADIO_STREAMS/);
+  assert.throws(() => loadConfig({ ...base, NEWS_DAILY_AT: '25:00' }), /時間格式/);
 });
 
 test('format: mentions are defanged', () => {
   const out = stripPings('hi @everyone and @here <@123> <@&456> <#789>');
   assert.ok(!/@everyone|@here/.test(out));
-  assert.ok(!/<@\d|<@&\d|<#\d/.test(out));
+  assert.ok(!/<@\d|<@&\d/.test(out));
+  assert.ok(stripPings('<#123>').includes('<#123>'), 'channel links are harmless and stay clickable');
 });
 
 test('format: long text splits under the limit without losing content', () => {
@@ -124,29 +127,36 @@ test('prompt: system mentions sources and date; kinds shape the question', () =>
   assert.equal(KINDS.ask('hello'), 'hello');
 });
 
-test('slash commands are valid for Discord and depend on the configuration', () => {
+test('slash commands are valid for Discord, in Chinese, and depend on the configuration', () => {
   const names = (cfg) => buildCommands(cfg).map((c) => c.name);
-  assert.deepEqual(names({ ai: false, musicEnabled: false }).filter((n) => ['ask', 'sources', 'music'].includes(n)), []);
-  assert.ok(names({ ai: false, musicEnabled: true }).includes('music'));
-  assert.ok(['ask', 'sources'].every((n) => names({ ai: true }).includes(n)));
-  assert.ok(['help', 'drop', 'map', 'guide', 'roll', 'pick', 'scroll', 'rps', 'guess', 'quiz', 'rank'].every((n) => names({}).includes(n)));
-  const all = buildCommands({ ai: true, musicEnabled: true });
+  assert.deepEqual(names({}).filter((n) => ['問答', 'ai來源'].includes(n)), []);
+  assert.ok(['問答', 'ai來源'].every((n) => names({ ai: true }).includes(n)));
+  const expected = ['說明', '掉落物', '地圖', '攻略', '更新情報', '回報', '回報刪除', '情報來源', '打怪', '角色', '背包', '賣出', '簽到', '賭博', '排行榜', '擲骰', '抽籤', '衝捲', '猜拳', '猜數字', '猜怪物'];
+  assert.ok(expected.every((n) => names({}).includes(n)), 'all the commands the users asked for');
+  const all = buildCommands({ ai: true });
   assert.equal(new Set(all.map((c) => c.name)).size, all.length, 'no duplicate names');
   assert.ok(all.length <= 100);
+  // Discord's rule for command / option names: letters (any script), digits, - and _, 1..32 chars, lowercase
   const check = (o) => {
-    assert.match(o.name, /^[\p{Ll}\p{N}_-]{1,32}$/u, o.name);
+    assert.match(o.name, /^[-_\p{L}\p{N}]{1,32}$/u, o.name);
+    assert.equal(o.name, o.name.toLowerCase(), o.name);
     assert.ok(o.description.length >= 1 && o.description.length <= 100, `${o.name}: description length`);
     for (const ch of o.choices ?? []) assert.ok(String(ch.name).length <= 100);
     (o.options ?? []).forEach(check);
   };
   all.forEach(check);
   // required options come before optional ones (Discord rejects the reverse)
-  for (const c of all) {
-    const opts = c.options ?? [];
+  const order = (opts, where) => {
     const firstOptional = opts.findIndex((o) => o.required === false);
-    if (firstOptional >= 0) assert.ok(opts.slice(firstOptional).every((o) => o.required === false), `${c.name}: required option after optional`);
+    if (firstOptional >= 0) assert.ok(opts.slice(firstOptional).every((o) => o.required === false), `${where}: required option after optional`);
+    for (const o of opts) if (o.options) order(o.options, `${where}/${o.name}`);
+  };
+  for (const c of all) order(c.options ?? [], c.name);
+  for (const [cmd, { option }] of Object.entries(AI_OPTION)) {
+    assert.ok(all.find((c) => c.name === cmd).options.some((o) => o.name === option), `${cmd}.${option}`);
   }
-  for (const [cmd, opt] of Object.entries(TEXT_OPTION)) {
-    assert.ok(all.find((c) => c.name === cmd).options.some((o) => o.name === opt), `${cmd}.${opt}`);
-  }
+  const admin = all.find((c) => c.name === '情報來源');
+  assert.equal(admin.default_member_permissions, '32');
+  assert.deepEqual(admin.options.map((o) => o.name), ['列表', '新增', '移除', '測試', '立即更新', '頻道加入', '頻道移除']);
+  assert.ok(all.find((c) => c.name === '掉落物').options[0].autocomplete);
 });

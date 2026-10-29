@@ -17,7 +17,7 @@ export function createHandlers({ config, client, limiter, semaphore, memory, log
       return { ok: false, message: '這個頻道沒有開放機器人查詢。' };
     }
     const q = (text ?? '').trim();
-    if (!q) return { ok: false, message: '請告訴我想查什麼,例如:`/ask 肥肥頭哪裡打?`' };
+    if (!q) return { ok: false, message: '請告訴我想查什麼,例如:`/問答 問題:肥肥頭哪裡打?`' };
     if (q.length > MAX_QUESTION_CHARS) return { ok: false, message: `問題太長了(最多 ${MAX_QUESTION_CHARS} 字),請精簡一點。` };
     const r = limiter.take(userId);
     if (!r.ok) {

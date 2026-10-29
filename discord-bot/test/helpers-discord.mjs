@@ -1,5 +1,5 @@
 // Fake interactions for testing commands without Discord.
-export function fakeInteraction({ user = 'u1', guild = 'g1', channel = 'c1', strings = {}, ints = {}, customId, name, sub, member, focused = '', channelSend } = {}) {
+export function fakeInteraction({ user = 'u1', guild = 'g1', channel = 'c1', strings = {}, ints = {}, users = {}, channels = {}, customId, name, sub, member, focused = '', focusedName = '', admin = false } = {}) {
   const calls = [];
   const rec = (n) => async (x) => void calls.push([n, x]);
   return {
@@ -10,14 +10,17 @@ export function fakeInteraction({ user = 'u1', guild = 'g1', channel = 'c1', str
     guildId: guild,
     channelId: channel,
     member,
+    memberPermissions: { has: () => admin },
     channel: { send: async (x) => void calls.push(['send', x]) },
     deferred: false,
     replied: false,
     options: {
       getString: (k) => strings[k] ?? null,
       getInteger: (k) => ints[k] ?? null,
+      getUser: (k) => users[k] ?? null,
+      getChannel: (k) => channels[k] ?? null,
       getSubcommand: () => sub,
-      getFocused: () => focused,
+      getFocused: (full) => (full ? { name: focusedName, value: focused } : focused),
     },
     reply: rec('reply'),
     update: rec('update'),

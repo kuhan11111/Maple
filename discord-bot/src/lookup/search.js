@@ -85,6 +85,11 @@ export class Index {
       .slice(0, limit);
   }
 
+  /** Entries to offer when nothing has been typed yet (autocomplete), most-connected first. */
+  browse({ kinds = null, limit = 25 } = {}) {
+    return this.entries.filter((e) => !kinds || kinds.includes(e.kind)).slice(0, limit).map((e) => ({ ...e, score: 1, match: 'browse' }));
+  }
+
   /** The single clear winner if there is one: strong match with a gap to the runner-up. */
   best(query, opts) {
     const r = this.search(query, { ...opts, limit: 6 });

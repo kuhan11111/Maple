@@ -1,13 +1,17 @@
 // Entry point: builds everything and starts the bot.  npm start
 
-import { Client, GatewayIntentBits } from 'discord.js';
+import { Client, GatewayIntentBits, Events } from 'discord.js';
 import { loadConfig } from './config.js';
 import { createDbSource } from './dbsource.js';
-import { Scores } from './scores.js';
+import { Reports } from './lookup/reports.js';
+import { Players } from './rpg/store.js';
 import { GuessGames } from './games/logic.js';
-import { Library } from './music/library.js';
-import { MusicManager } from './music/player.js';
-import { createVoiceAdapter } from './music/voice.js';
+import { SourceStore, NewsStore } from './news/store.js';
+import { Refresher } from './news/refresh.js';
+import { fetchText } from './news/fetch.js';
+import { scheduleDaily } from './news/schedule.js';
+import { digestText } from './news/render.js';
+import { stripPings } from './format.js';
 import { Memory } from './memory.js';
 import { RateLimiter, Semaphore } from './limits.js';
 import { createHandlers } from './handlers.js';
@@ -23,9 +27,14 @@ try {
 }
 const log = (event, data) => console.log(JSON.stringify({ t: new Date().toISOString(), event, ...data }));
 
-const source = createDbSource(config.dbPath);
-const scores = new Scores(config.scoresPath);
-process.on('exit', () => scores.flush());
+const reports = new Reports(config.reportsPath);
+const source = createDbSource(config.dbPath, { reports });
+const players = new Players(config.playersPath);
+const sources = new SourceStore(config.sourcesPath);
+const news = new NewsStore(config.newsPath);
+const refresher = new Refresher({ sources, store: news, fetchText, minIntervalMs: config.newsMinRefreshMs, log });
+const stores = [reports, players, sources, news];
+process.on('exit', () => stores.forEach((s) => s.flush()));
 for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => process.exit(0));
 
 let ai = null;
@@ -43,20 +52,31 @@ if (config.ai) {
   });
 }
 
-let musicCtx = null;
-if (config.musicEnabled) {
-  const library = new Library({ dir: config.musicDir, radio: config.radio });
-  musicCtx = { library, manager: new MusicManager({ createAdapter: createVoiceAdapter }) };
-}
-
-const routes = buildRoutes({ config, source, scores, guessGames: new GuessGames(), musicCtx, ai });
+const routes = buildRoutes({ config, source, reports, players, guessGames: new GuessGames(), sources, news, refresher, fetchText, ai });
 const intents = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages];
-if (config.musicEnabled) intents.push(GatewayIntentBits.GuildVoiceStates);
+if (config.channelIntel) intents.push(GatewayIntentBits.MessageContent);
 // Nothing the bot says may ping anyone.
 const discord = new Client({ intents, allowedMentions: { parse: [] } });
 attach(discord, { routes, log });
+
+// Every day: collect from all sources, then post what is new to the digest channel (if one is set).
+async function dailyJob() {
+  if (sources.sources.length) await refresher.refresh();
+  const fresh = news.takeDigest();
+  if (!config.newsChannelId || !fresh.length) return;
+  const channel = await discord.channels.fetch(config.newsChannelId);
+  await channel.send({ content: stripPings(digestText(fresh, { now: Date.now(), lastRefresh: news.lastRefresh, offsetHours: config.tzOffsetHours })), allowedMentions: { parse: [] } });
+  log('news_digest', { items: fresh.length, channel: config.newsChannelId });
+}
+
+discord.once(Events.ClientReady, () => {
+  scheduleDaily({ at: config.newsDailyAt, offsetHours: config.tzOffsetHours }, dailyJob, (err) => log('news_job_error', { message: err?.message }));
+  // after downtime, do not wait for tomorrow
+  if (sources.sources.length && (news.lastRefresh === null || Date.now() - news.lastRefresh > 20 * 3600_000)) refresher.refresh().catch((err) => log('news_job_error', { message: err?.message }));
+});
+
 process.on('unhandledRejection', (e) => log('unhandled_rejection', { message: String(e?.message ?? e) }));
-log('starting', { ai: config.ai, music: config.musicEnabled, db: config.dbPath });
+log('starting', { ai: config.ai, db: config.dbPath, dailyAt: config.newsDailyAt, digestChannel: !!config.newsChannelId, channelIntel: config.channelIntel });
 try {
   await discord.login(config.discordToken);
 } catch (err) {

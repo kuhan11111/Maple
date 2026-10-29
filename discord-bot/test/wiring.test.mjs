@@ -94,3 +94,23 @@ test('mention: a failing route answers politely instead of crashing', async () =
   await handler(Events.MessageCreate)(m);
   assert.match(m.calls[0][1].content, /出了點問題/);
 });
+
+test('intel: every message is offered to the intel route with the bot id, and failures never break the bot', async () => {
+  const seen = [];
+  let boom = false;
+  const { handler } = setup({
+    intel: (m, id) => {
+      seen.push([m.content, id]);
+      if (boom) throw new Error('boom');
+    },
+    mention: async () => ({ parts: ['x'] }),
+  });
+  const h = handler(Events.MessageCreate);
+  await h(message('plain chatter', { mentions: false }));
+  await h(message('<@999> hi', { bot: true })); // other bots / followed announcements are offered too
+  assert.deepEqual(seen, [['plain chatter', '999'], ['<@999> hi', '999']]);
+  boom = true;
+  const m = message('<@999> still answered');
+  await h(m);
+  assert.equal(m.calls[0][0], 'reply', 'a crashing intel hook does not stop the normal reply');
+});

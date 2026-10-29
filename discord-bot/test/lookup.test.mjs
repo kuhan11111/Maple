@@ -106,12 +106,12 @@ test('render: monster, item, map cards; empty and long lists', () => {
   assert.ok(card.indexOf('藍殼') < card.indexOf('楓葉'));
   assert.match(card, /藍殼 — 1\/50/);
   assert.match(card, /資料:測試資料/);
-  assert.match(renderItem(db, db.items.find((i) => i.name === '楓葉')), /木妖 \(Lv\.30\) — 機率不詳/);
+  assert.match(renderItem(db, db.items.find((i) => i.name === '楓葉')), /木妖 \(Lv\.30\) — \(未知\)/);
   assert.match(renderMap(db, '森林一'), /藍蝸牛 \(Lv\.2\)/);
   assert.match(renderMonster(db, db.monsters.find((m) => m.name === '藍蝸牛')), /藍殼 — 30/);
   assert.match(renderEntity(db, { kind: 'map', id: '森林二' }), /森林二/);
   const none = new Db(buildDb({ monsters: [{ 怪物: '孤單怪' }] }).db);
-  assert.match(renderMonster(none, none.monsters[0]), /沒有這隻怪物的掉落資料/);
+  assert.match(renderMonster(none, none.monsters[0]), /還沒有人整理這隻怪物的掉落/);
   const many = new Db(buildDb({ drops: Array.from({ length: 400 }, (_, i) => ({ 怪物: 'Boss', 道具: `很長很長的道具名稱${i}`, 機率: '0.01%' })) }).db);
   const long = renderMonster(many, many.monsters[0]);
   assert.ok(long.length < 2000, `${long.length}`);

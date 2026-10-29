@@ -5,12 +5,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseDice, rollDice, scrollRun, judge, GuessGames, makeQuiz, int, shuffle } from '../src/games/logic.js';
 import * as G from '../src/games/commands.js';
-import { Scores } from '../src/scores.js';
+import { Players } from '../src/rpg/store.js';
+import { START_MESOS } from '../src/rpg/logic.js';
 import { Db } from '../src/lookup/store.js';
 import { buildDb } from '../src/lookup/import.js';
 import { fakeInteraction as fi, seq } from './helpers-discord.mjs';
 
-const mkCtx = (over = {}) => ({ rng: seq(0.5), scores: new Scores(null), db: new Db(), guess: new GuessGames({ rng: seq(0.499) }), quizzes: new Map(), setTimeout: () => {}, ...over });
+const mkCtx = (over = {}) => ({ rng: seq(0.5), players: new Players(null), db: new Db(), guess: new GuessGames({ rng: seq(0.499) }), quizzes: new Map(), setTimeout: () => {}, ...over });
 
 test('dice parsing and rolling', () => {
   assert.deepEqual(parseDice('2d6+3'), { count: 2, sides: 6, mod: 3 });
@@ -46,36 +47,20 @@ test('guess game: hints narrow the range, win awards points, expires', () => {
   assert.equal(g.status('c'), null);
 });
 
-test('scores: totals, ranking, persistence', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'scores-'));
-  const path = join(dir, 's.json');
-  const s = new Scores(path, { delayMs: 5 });
-  s.add('g', 'a', 'rps');
-  s.add('g', 'b', 'quiz', 3);
-  s.add('g', 'a', 'guess', 1);
-  s.add('other', 'z', 'rps');
-  assert.deepEqual(s.top('g').map((x) => [x.userId, x.points]), [['b', 3], ['a', 2]]);
-  await new Promise((r) => setTimeout(r, 30));
-  assert.ok(existsSync(path));
-  assert.equal(new Scores(path).top('g')[0].userId, 'b');
-  assert.equal(JSON.parse(readFileSync(path, 'utf8')).g.a.wins.rps, 1);
-  assert.deepEqual(new Scores(join(dir, 'missing.json')).top('g'), []);
-});
-
 test('/roll /pick /scroll', async () => {
-  let i = fi({ strings: { dice: '2d6+1' } });
+  let i = fi({ strings: { 骰子: '2d6+1' } });
   await G.roll(i, mkCtx({ rng: seq(0, 0.999) }));
   assert.match(i.last().content, /\[1, 6\] \+ 1 = \*\*8\*\*/);
-  i = fi({ strings: { dice: 'nope' } });
+  i = fi({ strings: { 骰子: 'nope' } });
   await G.roll(i, mkCtx());
   assert.equal(i.last().flags, 64);
-  i = fi({ strings: { options: '麵, 飯，漢堡' } });
+  i = fi({ strings: { 選項: '麵, 飯，漢堡' } });
   await G.pick(i, mkCtx({ rng: seq(0.99) }));
   assert.match(i.last().content, /漢堡/);
-  i = fi({ strings: { options: '只有一個' } });
+  i = fi({ strings: { 選項: '只有一個' } });
   await G.pick(i, mkCtx());
   assert.equal(i.last().flags, 64);
-  i = fi({ ints: { rate: 60, slots: 3 } });
+  i = fi({ ints: { 成功率: 60, 格數: 3 } });
   await G.scroll(i, mkCtx({ rng: seq(0.1, 0.9, 0.2) }));
   assert.match(i.last().content, /✅❌✅/);
   assert.match(i.last().content, /2\/3/);
@@ -92,13 +77,13 @@ test('/rps: only the starter can press, win scores, buttons disappear', async ()
   assert.equal(intruder.last().flags, 64);
   const win = fi({ user: 'alice', customId: 'rps:alice:paper' });
   await G.rpsButton(win, ctx);
-  assert.match(win.last().content, /你贏了/);
+  assert.match(win.last().content, /你贏了.*\+200 楓幣/);
   assert.deepEqual(win.last().components, []);
-  assert.equal(ctx.scores.top('g1')[0].points, 1);
+  assert.equal(ctx.players.get('g1', 'alice').mesos, START_MESOS + 200);
   const lose = fi({ user: 'alice', customId: 'rps:alice:scissors' });
   await G.rpsButton(lose, ctx);
   assert.match(lose.last().content, /我贏了/);
-  assert.equal(ctx.scores.top('g1')[0].points, 1);
+  assert.equal(ctx.players.get('g1', 'alice').mesos, START_MESOS + 200, 'losing pays nothing');
 });
 
 test('/guess: start, hint, status, win', async () => {
@@ -106,17 +91,17 @@ test('/guess: start, hint, status, win', async () => {
   let i = fi({});
   await G.guess(i, ctx);
   assert.match(i.last().content, /想好了/);
-  i = fi({ ints: { number: 30 } });
+  i = fi({ ints: { 數字: 30 } });
   await G.guess(i, ctx);
   assert.match(i.last().content, /太小了.*31~100/);
   i = fi({});
   await G.guess(i, ctx);
   assert.match(i.last().content, /已猜 1 次/);
-  i = fi({ user: 'carol', ints: { number: 50 } });
+  i = fi({ user: 'carol', ints: { 數字: 50 } });
   await G.guess(i, ctx);
-  assert.match(i.last().content, /猜中了.*\+3/);
-  assert.equal(ctx.scores.top('g1')[0].userId, 'carol');
-  i = fi({ ints: { number: 200 } });
+  assert.match(i.last().content, /猜中了.*\+900 楓幣/);
+  assert.equal(ctx.players.get('g1', 'carol').mesos, START_MESOS + 900);
+  i = fi({ ints: { 數字: 200 } });
   await G.guess(i, ctx);
   assert.match(i.last().content, /想好了|1~100/);
 });
@@ -172,7 +157,8 @@ test('/quiz: wrong answers are private, first right answer wins, timeout reveals
   await G.quizButton(win, ctx);
   assert.match(win.last().content, /<@alice> 答對了/);
   assert.deepEqual(win.last().components, []);
-  assert.equal(ctx.scores.top('g1')[0].userId, 'alice');
+  assert.equal(ctx.players.get('g1', 'alice').mesos, START_MESOS + 500);
+  assert.match(win.last().content, /\+500 楓幣/);
   const late = fi({ user: 'dave', customId: right });
   await G.quizButton(late, ctx);
   assert.match(late.last().content, /已經結束/);
@@ -189,16 +175,4 @@ test('/quiz: wrong answers are private, first right answer wins, timeout reveals
   const empty = fi({});
   await G.quiz(empty, mkCtx());
   assert.equal(empty.last().flags, 64);
-});
-
-test('/rank', async () => {
-  const ctx = mkCtx();
-  let i = fi({});
-  await G.rank(i, ctx);
-  assert.match(i.last().content, /還沒有人/);
-  ctx.scores.add('g1', 'a', 'rps');
-  ctx.scores.add('g1', 'b', 'quiz', 5);
-  i = fi({});
-  await G.rank(i, ctx);
-  assert.match(i.last().content, /🥇 <@b> — \*\*5\*\* 分\(猜怪物 1\)[\s\S]*🥈 <@a>/);
 });

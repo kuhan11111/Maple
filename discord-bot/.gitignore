@@ -1,7 +1,5 @@
 node_modules/
 .env
-# 你自己匯入的資料、分數、音樂不進版本控制
+# 你自己匯入的資料、玩家回報、角色、情報不進版本控制
 data/*.json
 data/raw/
-music/*
-!music/.gitkeep
